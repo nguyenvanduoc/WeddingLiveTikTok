@@ -131,6 +131,44 @@
   checkServerVersion();
   setInterval(checkServerVersion, 10000);
 
+  // ---------------- 📡 Chẩn đoán kết nối TikTok ----------------
+  const ago = (s) => s == null ? 'chưa bao giờ' : s < 60 ? `${s} giây trước` : `${Math.round(s / 60)} phút trước`;
+  const TYPE = { chat: '💬', gift: '🎁', join: '👋', like: '❤️', follow: '⭐', share: '🔁' };
+  async function refreshDiag() {
+    let d;
+    try {
+      const res = await fetch('/api/diag');
+      if (res.status === 404) { $('diagVerdict').className = 'verdict bad'; $('diagVerdict').textContent = '❌ ' + OLD_SERVER; return; }
+      d = await res.json();
+    } catch { $('diagVerdict').className = 'verdict bad'; $('diagVerdict').textContent = '❌ Không kết nối được server – cửa sổ server đã tắt? Chạy lại start.bat'; return; }
+
+    const c = d.counts || {}, last = d.lastSeconds || {};
+    const seen = d.bridgeLastSeenSeconds, mode = d.bridgeMode, b = d.bridge || {};
+    $('diagBridge').innerHTML = seen == null ? '❌ Chưa liên lạc lần nào'
+      : `${b.connected ? '🟢' : '🔴'} ${mode === 'demo' ? '<b>DEMO (quà giả)</b>' : 'Live thật'} @${b.username || '?'}<br>${b.message || ''}<br><small>liên lạc ${ago(seen)}</small>`;
+    $('diagCounts').innerHTML = `💬 Bình luận: <b>${c.chat || 0}</b> <small>(${ago(last.chat)})</small><br>🎁 Quà: <b>${c.gift || 0}</b> · 👋 Vào xem: <b>${c.join || 0}</b> · ❤️ Tim: <b>${c.like || 0}</b>`;
+    $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng`;
+    $('diagRecent').innerHTML = (d.recent || []).map(e => `<li>${TYPE[e.type] || '•'} <b>${e.who}</b> ${e.text} <small>– ${ago(e.ago)}</small></li>`).join('') || '<li>(chưa có)</li>';
+
+    // Kết luận: đứt ở mắt xích nào
+    let v, ok = false;
+    if (seen == null) v = '❌ Bridge CHƯA gửi gì tới server. Kiểm tra: cửa sổ "TikTok bridge" có đang chạy không (start.bat)? Trong tiktok-bridge\\.env: SERVER_URL=http://localhost:5000, API_KEY trùng Wedding:ApiKey (để trống cả hai nếu không dùng).';
+    else if (seen > 40) v = '❌ Bridge đã ngừng liên lạc (' + ago(seen) + '). Cửa sổ bridge bị tắt? Chạy lại: npm start (thư mục gốc).';
+    else if (mode === 'demo') v = '❌ Bridge đang chạy DEMO (quà giả), KHÔNG đọc live thật. Sửa file tiktok-bridge\\.env (không phải .env.example): TIKTOK_USERNAME=vibelivedao và DEMO=false, rồi chạy lại bridge.';
+    else if (!b.connected) v = '❌ Bridge chưa vào được phòng live: ' + (b.message || '') + '. Đã bấm Go LIVE chưa? Xem dòng 👉 trong cửa sổ bridge.';
+    else if (!c.chat && !c.join && !c.like) v = '⏳ Đã kết nối live @' + b.username + ' nhưng chưa nhận sự kiện nào. Nhờ ai đó bình luận trên live để thử.';
+    else if (!d.stagesPlaying && d.stagesWithVoice === 0) v = '❌ Bình luận ĐÃ tới server nhưng KHÔNG có trang sân khấu nào bật tiếng → không ai đọc. Mở open-stage.bat hoặc tick "Bật tiếng khung xem trước".';
+    else if (!d.stagesPlaying) v = '⚠️ Bình luận đã tới, sân khấu có bật tiếng nhưng chưa phát được: bấm nút 🔊 trên trang sân khấu (trình duyệt chặn tiếng) hoặc bấm 🩺 Kiểm tra giọng bên dưới.';
+    else {
+      v = '✅ Mọi thứ hoạt động: bridge live thật @' + b.username + ', bình luận đã tới server, sân khấu đang phát tiếng.'; ok = true;
+      if (d.stagesPlaying > 1) v += ` ⚠️ Nhưng có ${d.stagesPlaying} trang cùng phát tiếng → MC/nhạc bị phát trùng. Bỏ tick "Bật tiếng khung xem trước" nếu đã mở cửa sổ sân khấu (open-stage.bat / OBS).`;
+    }
+    $('diagVerdict').className = 'verdict ' + (ok ? 'ok' : 'bad');
+    $('diagVerdict').textContent = v;
+  }
+  refreshDiag();
+  setInterval(refreshDiag, 3000);
+
   async function diagnose() {
     const out = $('diag'); out.hidden = false; out.textContent = '';
     const add = (s) => { out.textContent += s + '\n'; };

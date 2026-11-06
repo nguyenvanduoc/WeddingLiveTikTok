@@ -12,6 +12,16 @@
     <div id="status" class="status off">⚪ Bridge TikTok: chưa kết nối</div>
   </header>
   <div id="serverBanner" class="banner" hidden></div>
+  <section id="diag" class="diagbox">
+    <h2>📡 Kết nối TikTok <small>(tự cập nhật – chụp màn hình phần này gửi hỗ trợ nếu lỗi)</small></h2>
+    <div id="diagVerdict" class="verdict">Đang kiểm tra…</div>
+    <div class="diaggrid">
+      <div><b>Bridge</b><div id="diagBridge">–</div></div>
+      <div><b>Server đã nhận</b><div id="diagCounts">–</div></div>
+      <div><b>Sân khấu có tiếng</b><div id="diagStages">–</div></div>
+    </div>
+    <details open><summary>10 sự kiện gần nhất server nhận được</summary><ul id="diagRecent"></ul></details>
+  </section>
 
   <main>
     <section class="preview">

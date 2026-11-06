@@ -198,6 +198,8 @@ Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng t�
 - Chrome thường chặn tự phát âm thanh → trên sân khấu hiện nút **🔊 Bấm để bật giọng MC**, bấm 1 lần là được.
 - Khung xem trước trong admin đã tắt tiếng (`?voice=0`) để không phát trùng.
 
+**Không đọc được bình luận TikTok?** Trang admin → khung **📡 Kết nối TikTok** ở đầu trang tự kiểm tra từng mắt xích (bridge chạy chưa, live thật hay DEMO, đã vào phòng chưa, server nhận được bao nhiêu bình luận, sân khấu có phát tiếng không) và ghi rõ lỗi + cách sửa. Chụp màn hình khung đó gửi hỗ trợ.
+
 **Không nghe thấy giọng?** Vào trang admin → mục 🎙️ MC ảo → bấm **🩺 Kiểm tra giọng**. Hay gặp nhất:
 
 1. Chỉ mở trang admin: khung xem trước ở admin **mặc định tắt tiếng**. Mở `http://localhost:5000/` ở tab khác (hoặc OBS), hoặc tick **🔊 Bật tiếng khung xem trước này**.

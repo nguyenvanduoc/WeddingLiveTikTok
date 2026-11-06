@@ -41,43 +41,61 @@ public static class LiveEndpoints
         var api = app.MapGroup("/api/events").AddEndpointFilter<ApiKeyFilter>();
 
         // ---- Quà ----
-        api.MapPost("/gift", async (GiftEvent gift, GiftQueueService queue) =>
+        api.MapPost("/gift", async (GiftEvent gift, GiftQueueService queue, EventLog log) =>
         {
             gift = Normalize(gift);
+            log.Add("gift", gift.Nickname, $"{gift.Count} x {gift.GiftName}");
             await queue.EnqueueAsync(gift);
             return Results.Accepted(value: new { queued = true, pending = queue.Pending });
         });
 
         // ---- Bình luận / tim / follow: không cần xếp hàng, đẩy thẳng ----
-        api.MapPost("/chat", async (ChatEvent e, IHubContext<WeddingHub> hub) =>
+        api.MapPost("/chat", async (ChatEvent e, IHubContext<WeddingHub> hub, EventLog log) =>
         {
             if (string.IsNullOrWhiteSpace(e.Comment)) return Results.BadRequest();
             e = e with { Nickname = Clean(e.Nickname, e.UserId), Comment = Truncate(e.Comment.Trim(), 80) };
+            log.Add("chat", e.Nickname, e.Comment);
             await hub.Clients.All.SendAsync("ChatReceived", e);
             return Results.Ok();
         });
 
-        api.MapPost("/like", async (LikeEvent e, IHubContext<WeddingHub> hub) =>
+        api.MapPost("/like", async (LikeEvent e, IHubContext<WeddingHub> hub, EventLog log) =>
         {
+            log.Add("like", e.Nickname, $"+{e.LikeCount} tim");
             e = e with { Nickname = Clean(e.Nickname, e.UserId), LikeCount = Math.Clamp(e.LikeCount, 1, 50) };
             await hub.Clients.All.SendAsync("LikeReceived", e);
             return Results.Ok();
         });
 
-        api.MapPost("/social", async (SocialEvent e, IHubContext<WeddingHub> hub) =>
+        api.MapPost("/social", async (SocialEvent e, IHubContext<WeddingHub> hub, EventLog log) =>
         {
             e = e with { Nickname = Clean(e.Nickname, e.UserId) };
+            log.Add(e.Action, e.Nickname, e.Action == "join" ? "vào xem" : e.Action);
             await hub.Clients.All.SendAsync("SocialReceived", e);
             return Results.Ok();
         });
 
         // ---- Bridge báo trạng thái kết nối TikTok ----
-        api.MapPost("/status", async (BridgeStatus s, BridgeStatusStore store, IHubContext<WeddingHub> hub) =>
+        api.MapPost("/status", async (BridgeStatus s, BridgeStatusStore store, IHubContext<WeddingHub> hub, EventLog log) =>
         {
             store.Current = s;
+            log.BridgeSeen(s.Mode);
             await hub.Clients.All.SendAsync("BridgeStatus", s);
             return Results.Ok();
         });
+
+        // ---- Chẩn đoán cho trang admin: bridge, sự kiện đã nhận, sân khấu có tiếng ----
+        app.MapGet("/api/diag", (BridgeStatusStore status, EventLog log, StageRegistry stages) => Results.Ok(new
+        {
+            Bridge = status.Current,
+            BridgeMode = log.BridgeMode,
+            BridgeLastSeenSeconds = log.BridgeLastSeen is DateTime t ? (int)(DateTime.Now - t).TotalSeconds : (int?)null,
+            Counts = log.Counts,
+            LastSeconds = log.Last.ToDictionary(kv => kv.Key, kv => (int)(DateTime.Now - kv.Value).TotalSeconds),
+            Recent = log.Recent.Take(10).Select(e => new { e.Type, e.Who, e.Text, Ago = (int)(DateTime.Now - e.At).TotalSeconds }),
+            StagesWithVoice = stages.All().Count(s => s.VoiceOn),
+            StagesPlaying = stages.All().Count(s => s.VoiceOn && s.State == "ok")
+        }));
 
         // ---- Webhook dạng GET cho TikFinity / Streamer.bot ----
         // Ví dụ: /api/events/webhook/gift?key=XXX&username={username}&nickname={nickname}&gift={giftname}&count={repeatcount}&coins={coins}

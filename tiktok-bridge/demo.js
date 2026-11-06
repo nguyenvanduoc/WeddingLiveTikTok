@@ -88,7 +88,8 @@ export function runDemo({ post, server, intervalMs = 20000 }) {
   console.log('   Bấm Ctrl+C để dừng.');
   console.log('==================================================');
 
-  const status = (connected, message) => post('status', { connected, username: 'DEMO', message });
+  const status = (connected, message) => post('status', { connected, username: 'DEMO', message, mode: 'demo' });
+  setInterval(() => status(true, 'Chế độ DEMO (quà giả)'), 15000);
   status(true, 'Chế độ DEMO (quà giả)');
 
   function tick() {

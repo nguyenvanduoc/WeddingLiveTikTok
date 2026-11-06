@@ -48,4 +48,6 @@ public record BridgeStatus
     public bool Connected { get; init; }
     public string? Username { get; init; }
     public string? Message { get; init; }
+    /// <summary>"live" = đang đọc live thật, "demo" = quà giả để test.</summary>
+    public string? Mode { get; init; }
 }

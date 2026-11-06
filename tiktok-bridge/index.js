@@ -54,7 +54,13 @@ async function post(path, body) {
   }
 }
 
-const status = (connected, message) => post('status', { connected, username: USERNAME, message });
+// Báo trạng thái cho server (kèm chế độ live/demo). Gửi lại mỗi 15s để admin biết bridge còn sống.
+let lastStatus = { connected: false, message: 'Đang khởi động' };
+const status = (connected, message) => {
+  lastStatus = { connected, message };
+  return post('status', { connected, username: USERNAME, message, mode: DEMO ? 'demo' : 'live' });
+};
+if (!DEMO) setInterval(() => status(lastStatus.connected, lastStatus.message), 15000);
 
 // ---------- Đọc field an toàn (tên field khác nhau giữa các version proto) ----------
 const first = (...vals) => vals.find(v => v !== undefined && v !== null && v !== '');
