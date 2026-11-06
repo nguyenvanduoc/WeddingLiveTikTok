@@ -80,6 +80,8 @@ public class VoiceOptions
     public List<string>? NpcLines { get; set; }
     /// <summary>MC giới thiệu trước khi phát nhạc cưới.</summary>
     public List<string>? MusicLines { get; set; }
+    /// <summary>Câu chúc / câu nói hay về đám cưới: MC xen kẽ với câu dẫn, cả trong lúc có nhạc.</summary>
+    public List<string>? WeddingQuotes { get; set; }
 
     /// <summary>Tên quà TikTok (tiếng Anh) -> cách đọc tiếng Việt.</summary>
     public Dictionary<string, string>? GiftNames { get; set; }
@@ -182,6 +184,32 @@ public class VoiceOptions
         "Xin mời quý vị cùng thưởng thức một bản nhạc cưới thật lãng mạn!",
         "Âm nhạc lên nào! Chúc cho {bride} và {groom} trăm năm hạnh phúc!",
         "Cùng lắng nghe giai điệu tình yêu dành tặng cô dâu chú rể nhé!"
+    };
+
+    public static readonly string[] DefaultWeddingQuotes =
+    {
+        "Hôn nhân không phải là tìm được một người hoàn hảo, mà là cùng nhau vượt qua những điều chưa hoàn hảo.",
+        "Chúc {bride} và {groom} mãi nắm tay nhau như ngày đầu tiên gặp gỡ.",
+        "Hạnh phúc là mỗi sáng thức dậy, bên cạnh mình là người mình thương.",
+        "Một chữ duyên để gặp gỡ, một chữ nợ để gắn bó. Chúc đôi uyên ương trọn vẹn cả duyên lẫn nợ.",
+        "Tình yêu không phải là nhìn nhau, mà là cùng nhau nhìn về một hướng.",
+        "Ông bà ta nói: thuận vợ thuận chồng, tát biển Đông cũng cạn.",
+        "Chúc cô dâu chú rể chăn ấm nệm êm, nhà cửa lúc nào cũng đầy tiếng cười trẻ thơ.",
+        "Gia đình là nơi yêu thương bắt đầu và không bao giờ có điểm kết thúc.",
+        "Yêu nhau là cùng nhau lớn lên, cùng nhau già đi, và chưa bao giờ thôi thương nhau.",
+        "Kính chúc hai bên gia đình nội ngoại thật nhiều sức khỏe, vui vầy bên con cháu.",
+        "Trăm năm tình viên mãn, bạc đầu nghĩa phu thê.",
+        "Chúc {bride} và {groom} luôn là nơi bình yên nhất của nhau.",
+        "Hôn nhân hạnh phúc là khi mỗi ngày đều chọn yêu nhau thêm một lần nữa.",
+        "Từ hôm nay, niềm vui sẽ được nhân đôi, còn nỗi buồn sẽ được chia một nửa.",
+        "Cưới nhau là để có một người cùng mình đi qua tất cả những ngày bình thường.",
+        "Chúc cho tổ ấm nhỏ của {bride} và {groom} luôn ngập tràn tiếng cười.",
+        "Giữa hàng triệu người, tìm được nhau đã là may mắn, giữ được nhau là hạnh phúc.",
+        "Một mái nhà, hai trái tim, trọn đời chung một lối đi.",
+        "Chúc đôi bạn trẻ đầu bạc răng long, sớm có tin vui, làm ăn phát đạt.",
+        "Tình yêu bắt đầu bằng ánh mắt, và được giữ gìn bằng sự thấu hiểu mỗi ngày.",
+        "Cảm ơn quý vị đã cùng chứng kiến khoảnh khắc thiêng liêng này của {bride} và {groom}.",
+        "Hạnh phúc không ở đâu xa, hạnh phúc là được nắm tay người mình yêu trong ngày hôm nay."
     };
 
     public static readonly string[] DefaultChatTemplates = { "{name} nói: {comment}", "{name} gửi lời chúc: {comment}", "Bạn {name} bình luận: {comment}" };

@@ -34,6 +34,7 @@ public static class LiveEndpoints
             o.CurrentValue.MusicEnabled,
             MusicEverySeconds = Math.Clamp(o.CurrentValue.MusicEverySeconds, 5, 3600),
             o.CurrentValue.MusicStopOnGift,
+            DanceMusicSeconds = Math.Clamp(o.CurrentValue.DanceMusicSeconds, 10, 300),
             MusicVolume = Math.Clamp(o.CurrentValue.MusicVolume, 0, 1),
             MusicMaxSeconds = Math.Clamp(o.CurrentValue.MusicMaxSeconds, 10, 600)
         }));

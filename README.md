@@ -104,7 +104,7 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 ## 🎉 Sân khấu tự sinh động khi vắng (ưu tiên dữ liệu TikTok)
 
 Mới live ít người: sau `IdleAfterSeconds` (6s) không có quà / bình luận / follow thật, **khách mời trong tiệc tự hoạt động**
-khoảng mỗi `IdleEverySeconds` (15s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
+khoảng mỗi `IdleEverySeconds` (20s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
 MC mời gọi người xem (`Voice:IdleLines`).
 
 - Mỗi lượt khách mời mang **tên vai trong tiệc** (Bác Tư, Cô Hoa, Bạn thân cô dâu, Đồng nghiệp chú rể…) với **nhãn tím** và **quà truyền thống** khác nhau (🧧 phong bì, 🍾 rượu, 🎂 bánh cưới, 🧸 gấu bông…), không lặp gần nhau; MC: "Bác Tư lên trao phong bì mừng cô dâu chú rể!" (`Voice:NpcLines`).
@@ -125,7 +125,9 @@ Hết chỗ: người xem chưa tặng quà, lâu không hoạt động nhất n
 
 ## 🎵 Nhạc cưới khi vắng quà
 
-Nhạc phát **liên tục**: bài đầu ~5 giây sau khi mở sân khấu, hết bài thì `MusicEverySeconds` (30 giây) sau phát bài tiếp;
+MC có 22 **câu chúc / câu nói hay về đám cưới** (`Voice:WeddingQuotes`), xen kẽ câu dẫn; trong lúc có nhạc cứ ~20 giây nói 1 câu hay (nhạc nhỏ lại).
+
+Nhạc phát **liên tục**: bài đầu ~5 giây sau khi mở sân khấu, hết bài thì `MusicEverySeconds` (15 giây) sau phát bài tiếp;
 MC giới thiệu 1 lần mỗi 3 bài, nốt nhạc bay quanh sân khấu. Thanh trượt trong admin: khoảng cách giữa 2 bài + âm lượng.
 - Chép file `.mp3/.ogg/.m4a/.wav` vào `WeddingLive/wwwroot/music/` để phát nhạc của bạn (xáo trộn, không lặp liền).
   Chỉ dùng bài bạn có quyền dùng — nhạc có bản quyền có thể khiến TikTok tắt tiếng / cảnh cáo live. File nhạc không được đưa lên git.
@@ -146,7 +148,7 @@ Mỗi quà cộng điểm vào **thanh tình yêu** dưới tên cô dâu chú r
 | Mốc (cấu hình `Wedding`) | Màn diễn |
 |---|---|
 | `HugAt` (mặc định 100) | Cô dâu chú rể tiến lại gần, **ôm nhau và hôn nhẹ** 💋, tim bay |
-| `DanceAt` (mặc định 300) | Hai người **khiêu vũ** điệu valse 2 vòng, nốt nhạc bay, pháo hoa → thanh về 0, vòng mới |
+| `DanceAt` (mặc định 300) | **Phát nhạc ~1 phút** (`DanceMusicSeconds`) và hai người **khiêu vũ** valse suốt bài, nốt nhạc bay, pháo hoa đầu–giữa–cuối → thanh về 0, vòng mới |
 
 - Màn diễn bắt đầu đúng lúc khách trao món quà làm đầy thanh.
 - MC **khích lệ** khi thanh được 50% / 80% ("Chỉ còn 10 điểm nữa là cô dâu chú rể ôm nhau và hôn nhẹ!"),

@@ -97,16 +97,16 @@ export function runDemo({ post, server, intervalMs = 20000 }) {
     const base = { userId: slug(user), nickname: user };
     const r = Math.random();
 
-    if (r < 0.65) {
+    if (r < 0.3) {                 // 30% quà (trước 55-65%)
       const [giftName, diamondValue] = weightedGift();
       const count = COUNTABLE.includes(giftName) ? rnd([1, 1, 1, 2, 3, 5, 5, 10, 15, 20, 30]) : 1;
       console.log(`🎁 [DEMO] ${user} tặng ${count} x ${giftName}`);
       post('gift', { ...base, giftName, count, diamondValue });
-    } else if (r < 0.8) {
+    } else if (r < 0.65) {
       const comment = rnd(COMMENTS);
       console.log(`💬 [DEMO] ${user}: ${comment}`);
       post('chat', { ...base, comment });
-    } else if (r < 0.93) {
+    } else if (r < 0.88) {
       console.log(`👋 [DEMO] ${user} vào xem live`);
       post('social', { ...base, action: 'join' });
     } else {

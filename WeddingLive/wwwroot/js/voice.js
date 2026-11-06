@@ -20,6 +20,7 @@
     let lastGiftAt = performance.now();         // lần gần nhất có quà thật (mở trang: chào mừng trước, 20s sau mới kêu gọi)
     const nextIdleLine = () => fill(cfg.idleLines[idleIndex++ % cfg.idleLines.length], base());   // xoay vòng, không lặp liền
     let isStageBusy = () => false;
+    let isMusicPlaying = () => false;
 
     // Trạng thái giọng (báo về server để trang admin chẩn đoán):
     // waiting | ok | blocked (trình duyệt chặn) | fallback (server TTS lỗi, dùng giọng trình duyệt) | disabled | muted
@@ -204,16 +205,27 @@
       document.body.appendChild(btn);
     }
 
-    // ---------------- MC tự nói câu dẫn khi sân khấu yên lặng ----------------
+    // ---------------- MC tự nói khi sân khấu yên lặng ----------------
+    // Vòng 3 câu: câu chúc hay -> câu dẫn -> (lâu không có quà ? câu kêu gọi tặng quà : câu chúc hay).
+    // Trong lúc có nhạc: ~20 giây nói 1 câu chúc hay (nhạc nhỏ lại khi MC nói).
+    let quoteIndex = 0, quoteOrder = [];
+    const nextQuote = () => {
+      if (!quoteOrder.length) quoteOrder = [...(cfg.weddingQuotes || [])].sort(() => Math.random() - 0.5);
+      return fill(quoteOrder.shift() || '', base());
+    };
     setInterval(() => {
       const every = (cfg.announceIntervalSeconds || 0) * 1000;
       if (!every || playing || locked || queue.length || isStageBusy()) return;
-      if (performance.now() - lastSpoke < every) return;
-      // Lâu không có quà (20s): xen kẽ 1 câu dẫn – 1 câu kêu gọi "hãy tặng gì đó để chúc mừng cô dâu chú rể"
+      const musicOn = isMusicPlaying();
+      if (performance.now() - lastSpoke < (musicOn ? Math.max(every, 20000) : every)) return;
+      const hasQuotes = !!cfg.weddingQuotes?.length;
+      if (musicOn) { if (hasQuotes) enqueue(nextQuote(), 0); return; }
+      const slot = autoCount++ % 3;
       const quiet = performance.now() - lastGiftAt > 20000;
-      if (quiet && cfg.idleLines?.length && autoCount++ % 2 === 0) {
-        enqueue(nextIdleLine(), 0);
-        return;
+      if (slot === 0 && hasQuotes) { enqueue(nextQuote(), 0); return; }
+      if (slot === 2) {
+        if (quiet && cfg.idleLines?.length) { enqueue(nextIdleLine(), 0); return; }
+        if (hasQuotes) { enqueue(nextQuote(), 0); return; }
       }
       const list = cfg.announcements || [];
       // Bỏ qua câu có {top1} khi chưa ai tặng quà
@@ -234,6 +246,7 @@
         return cfg;
       },
       setBusyCheck(fn) { isStageBusy = fn; },
+      setMusicCheck(fn) { isMusicPlaying = fn; },
       onStateChange(fn) { onState = fn; },
       get state() { return state; },
       muted: MUTED_BY_URL,

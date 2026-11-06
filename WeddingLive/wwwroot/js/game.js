@@ -106,7 +106,8 @@
       this.connectSignalR();
       this.startIdleLoop();
       // MC không đọc lời giới thiệu khi đang có khách lên tặng quà
-      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy && !g.npcTrip) || music.playing);   // đang phát nhạc: MC không tự nói câu dẫn
+      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy && !g.npcTrip));
+      voice.setMusicCheck(() => music.playing);        // đang có nhạc: MC chỉ thỉnh thoảng nói câu chúc hay
       this.startMusicLoop();
     }
 
@@ -430,12 +431,12 @@
       const now = performance.now();
       if (now - this.lastReal < (cfg.idleAfterSeconds ?? 6) * 1000) return;   // vừa có hoạt động thật
       if (now < this.idleNext || this.queue.length || this.coupleBusy) return;
-      this.idleNext = now + (cfg.idleEverySeconds ?? 15) * 1000 * (0.7 + Math.random() * 0.6);
+      this.idleNext = now + (cfg.idleEverySeconds ?? 20) * 1000 * (0.7 + Math.random() * 0.6);
+      // Ít quà ảo: 10% khách mời lên tặng, còn lại là nói chuyện, tim bay (MC đã tự xen câu chúc + kêu gọi)
       const r = Math.random();
-      if (r < 0.25) this.npcVisit();
+      if (r < 0.1) this.npcVisit();
       else if (r < 0.6) this.npcChat();
-      else if (r < 0.9) voice.idleLine();          // MC: "Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!"
-      else { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
+      else if (r < 0.8) { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
     }
 
     npcVisit() {
@@ -474,13 +475,13 @@
     // ---------------- Nhạc cưới: vắng quà thật musicEverySeconds giây thì phát 1 bài ----------------
     startMusicLoop() {
       this.lastRealGift = performance.now();
-      this.lastMusicEnd = performance.now() - (cfg.musicEverySeconds ?? 30) * 1000 + 5000;   // bài đầu phát ~5s sau khi mở
+      this.lastMusicEnd = performance.now() - (cfg.musicEverySeconds ?? 15) * 1000 + 5000;   // bài đầu phát ~5s sau khi mở
       music.onEnd(() => { this.lastMusicEnd = performance.now(); this.musicNotes = false; });
       const tick = () => {
         // Phát liên tục: hết bài thì musicEverySeconds giây sau phát bài tiếp (kể cả khi có quà; MC đọc thì nhạc nhỏ lại)
-        const every = (cfg.musicEverySeconds ?? 30) * 1000, now = performance.now();
+        const every = (cfg.musicEverySeconds ?? 15) * 1000, now = performance.now();
         const giftOk = !cfg.musicStopOnGift || now - this.lastRealGift > every;
-        if (MUSIC_ON() && !music.playing && !this.musicPending && giftOk && now - this.lastMusicEnd > every) this.playMusic();
+        if (MUSIC_ON() && !music.playing && !this.musicPending && !this.coupleBusy && giftOk && now - this.lastMusicEnd > every) this.playMusic();
         this.after(1000, tick);
       };
       tick();
@@ -557,6 +558,15 @@
 
     doDance(done) {
       const B = this.bride.root, G = this.groom.root, cx = CENTER_X, y0 = 340, R = 46;
+      // Khiêu vũ theo nhạc khoảng danceMusicSeconds giây (mặc định 60)
+      const seconds = Math.max(10, cfg.danceMusicSeconds ?? 60);
+      if (MUSIC_ON()) {
+        this.after(2500, () => {                     // để MC mời khiêu vũ xong rồi nhạc vào
+          const name = music.playDance(seconds - 2.5, () => { });
+          if (name) console.log('💃 Nhạc khiêu vũ:', name);
+        });
+      }
+      this.after(seconds * 500, () => this.celebrate());   // pháo hoa giữa bài
       this.celebrate();
       // Nốt nhạc, tim, lấp lánh bay quanh
       let alive = true;
@@ -566,19 +576,20 @@
           Phaser.Utils.Array.GetRandom(['🎵', '🎶', '💕', '✨', '🎵']), { fontFamily: FONT, fontSize: Phaser.Math.Between(18, 30) + 'px' })
           .setOrigin(0.5).setDepth(960);
         this.tweens.add({ targets: t, y: t.y - 80, alpha: 0, duration: 1600, onComplete: () => t.destroy() });
-        this.after(220, spawn);
+        this.after(350, spawn);
       };
       spawn();
       // Vào vị trí rồi xoay vòng (điệu valse), người nghiêng qua lại theo nhịp
       this.tweens.add({ targets: B, x: cx - R, duration: 500 });
       this.tweens.add({ targets: G, x: cx + R, duration: 500 });
+      const laps = Math.max(2, Math.round(seconds / 7));   // ~7 giây 1 vòng valse
       this.after(500, () => this.tweens.addCounter({
-        from: 0, to: 1, duration: 8000,
+        from: 0, to: 1, duration: seconds * 1000 - 1100,
         onUpdate: (tw) => {
-          const v = tw.getValue(), a = Math.PI + v * Math.PI * 4;      // 2 vòng
+          const v = tw.getValue(), a = Math.PI + v * Math.PI * 2 * laps;
           B.x = cx + Math.cos(a) * R; B.y = y0 + Math.sin(a) * 14;
           G.x = cx - Math.cos(a) * R; G.y = y0 - Math.sin(a) * 14;
-          const sway = Math.sin(v * Math.PI * 16) * 8;
+          const sway = Math.sin(v * Math.PI * 4 * laps) * 8;   // lắc lư 2 nhịp mỗi vòng
           B.angle = sway; G.angle = -sway;
           B.setDepth(B.y); G.setDepth(G.y);
         },
@@ -977,7 +988,7 @@
         try {
           const c = await (await fetch('/api/config')).json();
           ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
-           'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicMaxSeconds', 'musicStopOnGift'].forEach(k => { if (k in c) cfg[k] = c[k]; });
+           'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicMaxSeconds', 'musicStopOnGift', 'danceMusicSeconds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
           music.duck(false);                             // áp âm lượng mới ngay
           music.setOff(!MUSIC_ON());
         } catch { }

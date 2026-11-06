@@ -47,6 +47,7 @@
     let files = [], fileOrder = [], pieceIndex = 0, ducked = false, onEnd = () => { };
     // Trạng thái báo về admin: waiting (chờ tới lượt) | playing | blocked (trình duyệt chặn) | off
     let state = 'waiting', onState = () => { };
+    let danceUntil = 0, danceTimer = null, danceDone = null;   // nhạc khiêu vũ: phát liên tục tới danceUntil
     const setState = (s) => { if (s !== state) { state = s; onState(s); } };
 
     // Trình duyệt chặn âm thanh khi chưa có thao tác của người dùng => bấm/chạm bất kỳ đâu là mở khóa
@@ -120,7 +121,7 @@
     }
 
     // ---------- Phát file nhạc ----------
-    function playFile(file) {
+    function playFile(file, maxSeconds) {
       audio = new Audio('/music/' + encodeURIComponent(file));
       audio.volume = target();
       audio.onended = () => finish();
@@ -129,7 +130,7 @@
         if (err && err.name === 'NotAllowedError') showBlocked();   // bị chặn: giữ bài, chờ bấm mở khóa
         else { audio = null; playSynth(); }
       });
-      const max = (getCfg().musicMaxSeconds ?? 90) * 1000;
+      const max = (maxSeconds ?? getCfg().musicMaxSeconds ?? 90) * 1000;
       stopTimer = setTimeout(() => stop(true), max);   // bài quá dài: cắt sau musicMaxSeconds (nhỏ dần)
       return file;
     }
@@ -138,13 +139,24 @@
       clearTimeout(stopTimer);
       if (audio) { audio.pause(); audio = null; }
       if (master) { try { master.disconnect(); } catch { } master = null; }
-      if (playing) { playing = false; setState('waiting'); onEnd(); }
+      // Đang khiêu vũ mà bài hết sớm => nối ngay bài tiếp cho đủ thời gian
+      if (playing && danceUntil && performance.now() < danceUntil - 4000) {
+        files.length ? playFile(nextFile(), (danceUntil - performance.now()) / 1000) : playSynth();
+        return;
+      }
+      if (playing) {
+        playing = false; setState('waiting');
+        const cb = danceDone; danceUntil = 0; danceDone = null; clearTimeout(danceTimer);
+        cb?.();
+        onEnd();
+      }
     }
 
-    function stop(fade = true) {
+    function stop(fade = true, ms = 1500) {
       if (!playing) return;
+      danceUntil = 0;                         // dừng hẳn (không nối bài khiêu vũ)
       if (!fade) return finish();
-      const steps = 15, ms = 1500;
+      const steps = 15;
       let i = 0;
       const start = audio ? audio.volume : master?.gain.value ?? 0;
       const iv = setInterval(() => {
@@ -169,6 +181,28 @@
         playing = true;
         clearTimeout(stopTimer);
         return files.length ? playFile(nextFile()) : playSynth();
+      },
+      /**
+       * Nhạc khiêu vũ: phát LIÊN TỤC `seconds` giây (nối nhiều bài nếu cần) rồi nhỏ dần tắt; xong gọi onDone.
+       * Đang có bài khác thì bài đó nhường chỗ.
+       */
+      playDance(seconds, onDone) {
+        const start = () => {
+          playing = true;
+          clearTimeout(stopTimer);
+          danceUntil = performance.now() + seconds * 1000;
+          danceDone = onDone;
+          clearTimeout(danceTimer);
+          danceTimer = setTimeout(() => stop(true), Math.max(1000, seconds * 1000 - 1500));   // 1,5s cuối nhỏ dần
+          return files.length ? playFile(nextFile(), seconds) : playSynth();
+        };
+        if (playing) {                         // bài đang phát nhỏ dần trong 0,6s rồi vào nhạc khiêu vũ
+          const prevEnd = onEnd; onEnd = () => { };
+          stop(true, 600);
+          setTimeout(() => { onEnd = prevEnd; start(); }, 700);
+          return 'dance';
+        }
+        return start();
       },
       stop,
       /** MC đang nói => nhạc nhỏ lại. */
