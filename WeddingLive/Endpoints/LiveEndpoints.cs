@@ -22,8 +22,9 @@ public static class LiveEndpoints
             o.CurrentValue.BrideName,
             o.CurrentValue.GroomName,
             o.CurrentValue.Title,
-            GuestCount = Math.Clamp(o.CurrentValue.GuestCount, 4, 24),
-            TableGuests = Math.Clamp(o.CurrentValue.TableGuests, 0, 12),
+            GuestCount = Math.Clamp(o.CurrentValue.GuestCount, 0, 24),
+            Tables = Math.Clamp(o.CurrentValue.Tables, 0, 5),
+            GuestsPerTable = Math.Clamp(o.CurrentValue.GuestsPerTable, 4, 12),
             o.CurrentValue.BigGiftDiamonds
         }));
 

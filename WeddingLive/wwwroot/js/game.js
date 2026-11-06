@@ -8,11 +8,11 @@
   const CENTER_X = W / 2;
   const params = new URLSearchParams(location.search);
   const TRANSPARENT = params.get('bg') === '0';     // ?bg=0 => nền trong suốt cho OBS
-  const { FONT, makePerson, makeLabel, startWalk, stopWalk, setFacing } = window.Chars;
+  const { FONT, makePerson, makeLabel, makeChair, baked, startWalk, stopWalk, setFacing } = window.Chars;
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 12, tableGuests: 10, bigGiftDiamonds: 99 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -31,11 +31,20 @@
   const voice = window.WeddingVoice.create(cfg);
   await voice.load();
 
-  // Bàn tiệc ở cuối thảm đỏ
-  const TABLE_N = Phaser.Math.Clamp(cfg.tableGuests ?? 0, 0, 12);
-  const HAS_TABLE = TABLE_N > 0;
-  const TABLE = { x: CENTER_X, y: 655, rx: 165, ry: 42 };
+  // Bàn tiệc tròn. Vị trí xếp theo thứ tự ưu tiên; s = tỉ lệ thu nhỏ (bàn xa sân khấu hơn thì to hơn).
+  const TABLE_SPOTS = [
+    { x: CENTER_X, y: 668, s: 0.74 },   // giữa hàng trước (cuối thảm đỏ)
+    { x: 330, y: 530, s: 0.62 },        // hàng sau bên trái
+    { x: 950, y: 530, s: 0.62 },        // hàng sau bên phải
+    { x: 195, y: 668, s: 0.74 },        // hàng trước bên trái
+    { x: 1085, y: 668, s: 0.74 }        // hàng trước bên phải
+  ];
+  const TABLES = Phaser.Math.Clamp(cfg.tables ?? 0, 0, TABLE_SPOTS.length);
+  const PER_TABLE = Phaser.Math.Clamp(cfg.guestsPerTable ?? 10, 4, 12);
+  const HAS_TABLE = TABLES > 0;
+  const TABLE_RX = 165, TABLE_RY = 42;  // bán kính mặt bàn ở tỉ lệ 1
   const LANE_Y = 465;      // "lối đi ngang" phía trước sân khấu
+  const WALK_SCALE = 0.9;  // cỡ nhân vật khi lên sân khấu
 
   class WeddingScene extends Phaser.Scene {
     constructor() { super('wedding'); }
@@ -138,22 +147,21 @@
 
     // ---------------- Khách mời ở dưới ----------------
     // Mỗi khách có: home (chỗ ngồi), path (các điểm đi từ chỗ ngồi ra lối đi ngang),
-    // seatFacing (hướng mặt khi ngồi yên).
+    // seatFacing (hướng mặt khi ngồi yên), baseScale (to nhỏ theo xa gần).
     addGuest(x, y, opts = {}) {
       const i = this.guests.length;
-      if (!TRANSPARENT && opts.chair !== false) {   // ghế
-        const chair = this.add.graphics().setDepth(y - 1);
-        chair.fillStyle(0xffffff, 1).fillRoundedRect(x - 22, y - 70, 44, 50, 8);
-        chair.lineStyle(3, 0xf3c2d6, 1).strokeRoundedRect(x - 22, y - 70, 44, 50, 8);
-        chair.fillStyle(0xff8fab, 1).fillCircle(x, y - 64, 6);
-      }
+      const scale = opts.scale ?? 1;
+      if (!TRANSPARENT && opts.chair !== false) makeChair(this, x, y, scale).setDepth(y - 1);
       const p = makePerson(this, x, y, 'guest', i);
-      const label = makeLabel(this, 'Khách ' + (i + 1), { fontSize: opts.compact ? '12px' : '14px' });
+      p.root.setScale(scale);
+      const label = makeLabel(this, 'Khách ' + (i + 1), { fontSize: '14px' });
       label.setPosition(0, opts.labelY ?? -128);
+      if (opts.hideLabel) label.setVisible(false);       // khách ngồi bàn: chỉ hiện tên khi đã có người tặng
       p.root.add(label);
       Object.assign(p, {
         label, homeX: x, homeY: y, busy: false, userId: null, lastUsed: 0, index: i, bubble: null,
-        path: opts.path, seatFacing: opts.facing || 'front', compact: !!opts.compact
+        path: opts.path, seatFacing: opts.facing || 'front', compact: !!opts.compact,
+        baseScale: scale, labelSize: opts.compact ? 0.85 : 0.95, labelPop: 1, hideLabel: !!opts.hideLabel
       });
       setFacing(p, p.seatFacing);
       this.guests.push(p);
@@ -161,77 +169,81 @@
     }
 
     drawGuests() {
-      // --- Khách đứng hai bên lối đi ---
-      const n = Phaser.Math.Clamp(cfg.guestCount, 4, 24);
-      const perRow = 6;                                  // 3 bên trái + 3 bên phải lối đi
-      const rows = Math.ceil(n / perRow);
-      const top = 520, bottom = 690;
-      // Có bàn tiệc thì dạt khách ra hai bên để chừa chỗ giữa
-      const leftXs = HAS_TABLE ? [110, 240, 370] : [140, 290, 440];
-      const rightXs = HAS_TABLE ? [910, 1040, 1170] : [840, 990, 1140];
-
-      for (let i = 0; i < n; i++) {
-        const row = Math.floor(i / perRow), col = i % perRow;
-        const y = rows === 1 ? (top + bottom) / 2 : top + (bottom - top) * row / (rows - 1);
-        const left = col < 3;
-        const x = left ? leftXs[col] : rightXs[col - 3];
-        // Đi vào khe giữa hai cột ghế rồi đi thẳng lên lối đi ngang
-        const laneX = HAS_TABLE ? x + (left ? 65 : -65) : CENTER_X + Phaser.Math.Between(-25, 25);
-        this.addGuest(x, y, { path: [{ x: laneX, y }, { x: laneX, y: LANE_Y }] });
+      if (!HAS_TABLE) {
+        // --- Không có bàn: khách đứng 2 bên lối đi như bản đầu ---
+        const n = Phaser.Math.Clamp(cfg.guestCount, 4, 24);
+        const rows = Math.ceil(n / 6), top = 520, bottom = 690;
+        const xs = [140, 290, 440, 840, 990, 1140];
+        for (let i = 0; i < n; i++) {
+          const row = Math.floor(i / 6);
+          const y = rows === 1 ? (top + bottom) / 2 : top + (bottom - top) * row / (rows - 1);
+          const laneX = CENTER_X + Phaser.Math.Between(-25, 25);
+          this.addGuest(xs[i % 6], y, { path: [{ x: laneX, y }, { x: laneX, y: LANE_Y }] });
+        }
+        return;
       }
 
-      if (HAS_TABLE) this.drawBanquet();
+      // --- Có bàn: khách đứng 2 bên sân khấu (0 - 12 người) ---
+      const n = Phaser.Math.Clamp(cfg.guestCount, 0, 12);
+      const cols = [55, 135, 215, 1065, 1145, 1225];
+      for (let i = 0; i < n; i++) {
+        const x = cols[i % 6], y = i < 6 ? 445 : 492;
+        this.addGuest(x, y, { scale: 0.72, chair: false, path: [{ x, y: LANE_Y }] });
+      }
+
+      // --- Các bàn tròn ---
+      TABLE_SPOTS.slice(0, TABLES).forEach(spot => this.drawTable(spot));
     }
 
-    // ---------------- Bàn tiệc + khách ngồi quanh bàn ----------------
-    drawBanquet() {
-      const { x: TX, y: TY, rx: RX, ry: RY } = TABLE;
-      const front = TABLE_N >= 4 ? Math.floor(TABLE_N * 0.4) : 0;   // hàng trước, quay lưng
-      const sides = TABLE_N >= 6 ? 2 : 0;                          // hai đầu bàn
-      const backN = TABLE_N - front - sides;                        // hàng sau, nhìn về người xem
+    // ---------------- 1 bàn tròn + khách ngồi quanh bàn ----------------
+    drawTable({ x: TX, y: TY, s }) {
+      const RX = TABLE_RX * s;
+      const front = Math.floor(PER_TABLE * 0.4);                 // hàng trước, quay lưng
+      const sides = PER_TABLE >= 6 ? 2 : 0;                      // hai đầu bàn
+      const backN = PER_TABLE - front - sides;                    // hàng sau, nhìn về người xem
       const spreadX = (count, margin) => Array.from({ length: count }, (_, k) =>
-        count === 1 ? TX : TX - RX + margin + (2 * (RX - margin)) * k / (count - 1));
+        count === 1 ? TX : TX - RX + margin * s + (2 * (RX - margin * s)) * k / (count - 1));
+      const seat = { scale: s, compact: true, hideLabel: true };
 
       // Hàng sau: bàn che phần chân => trông như đang ngồi. Đi thẳng lên sân khấu.
-      spreadX(backN, 42).forEach((x, k) => this.addGuest(x, TY - 22, {
-        compact: true, labelY: k % 2 ? -140 : -122, path: [{ x, y: LANE_Y }]
+      spreadX(backN, 42).forEach((x, k) => this.addGuest(x, TY - 22 * s, {
+        ...seat, labelY: k % 2 ? -146 : -126, path: [{ x, y: LANE_Y }]
       }));
 
       // Hai đầu bàn: bước ra ngoài rồi đi lên
       if (sides) [-1, 1].forEach(side => {
-        const x = TX + side * (RX + 10), y = TY - 4, outX = x + side * 45;
-        this.addGuest(x, y, { compact: true, path: [{ x: outX, y }, { x: outX, y: LANE_Y }] });
+        const x = TX + side * (RX + 10 * s), y = TY - 4 * s, outX = x + side * 45 * s;
+        this.addGuest(x, y, { ...seat, path: [{ x: outX, y }, { x: outX, y: LANE_Y }] });
       });
 
       // Hàng trước: quay lưng, đi vòng qua đầu bàn rồi lên
       spreadX(front, 55).forEach(x => {
-        const y = H - 6, sideX = x < TX ? TX - RX - 60 : TX + RX + 60;
-        this.addGuest(x, y, {
-          compact: true, facing: 'back', chair: false,
-          path: [{ x: sideX, y }, { x: sideX, y: LANE_Y }]
-        });
+        const y = TY + 59 * s, sideX = x < TX ? TX - RX - 60 * s : TX + RX + 60 * s;
+        this.addGuest(x, y, { ...seat, facing: 'back', chair: false, path: [{ x: sideX, y }, { x: sideX, y: LANE_Y }] });
       });
 
-      // Mặt bàn: vẽ sau cùng, depth = TY => che chân hàng sau, nằm dưới hàng trước
-      const t = this.add.graphics().setDepth(TY);
-      t.fillStyle(0x000000, 0.12).fillEllipse(TX, TY + 44, RX * 2 + 10, RY * 2);         // bóng
-      t.fillStyle(0xf7b6cc, 1).fillEllipse(TX, TY + 26, RX * 2, RY * 2)
-        .fillRect(TX - RX, TY, RX * 2, 26);                                              // khăn trải bàn rủ xuống
-      t.fillStyle(0xffffff, 1).fillEllipse(TX, TY, RX * 2, RY * 2);                      // mặt bàn
-      t.lineStyle(3, 0xff8fab, 1).strokeEllipse(TX, TY, RX * 2, RY * 2);
-      for (let k = 0; k < 10; k++) {                                                     // đĩa
-        const a = (k / 10) * Math.PI * 2;
-        const px = TX + Math.cos(a) * (RX - 28), py = TY + Math.sin(a) * (RY - 12);
-        t.fillStyle(0xffffff, 1).fillEllipse(px, py, 26, 12);
-        t.lineStyle(2, 0xf3c2d6, 1).strokeEllipse(px, py, 26, 12);
-      }
-      const deco = (x, y, e, size) => this.add.text(x, y, e, { fontFamily: FONT, fontSize: size })
+      // Mặt bàn (ảnh vẽ 1 lần, dùng chung cho mọi bàn). depth = TY => che chân hàng sau, nằm dưới hàng trước
+      baked(this, 'round_table', 352, 136, 176, 46, t => {
+        t.fillStyle(0x000000, 0.12).fillEllipse(0, 44, TABLE_RX * 2 + 10, TABLE_RY * 2);   // bóng
+        t.fillStyle(0xf7b6cc, 1).fillEllipse(0, 26, TABLE_RX * 2, TABLE_RY * 2)
+          .fillRect(-TABLE_RX, 0, TABLE_RX * 2, 26);                                       // khăn rủ xuống
+        t.fillStyle(0xffffff, 1).fillEllipse(0, 0, TABLE_RX * 2, TABLE_RY * 2);           // mặt bàn
+        t.lineStyle(3, 0xff8fab, 1).strokeEllipse(0, 0, TABLE_RX * 2, TABLE_RY * 2);
+        for (let k = 0; k < 10; k++) {                                                    // đĩa
+          const a = (k / 10) * Math.PI * 2;
+          const px = Math.cos(a) * (TABLE_RX - 28), py = Math.sin(a) * (TABLE_RY - 12);
+          t.fillStyle(0xffffff, 1).fillEllipse(px, py, 26, 12);
+          t.lineStyle(2, 0xf3c2d6, 1).strokeEllipse(px, py, 26, 12);
+        }
+      }).setPosition(TX, TY).setScale(s).setDepth(TY);
+
+      const deco = (dx, dy, e, size) => this.add.text(TX + dx * s, TY + dy * s, e, { fontFamily: FONT, fontSize: Math.round(size * s) + 'px' })
         .setOrigin(0.5, 0.8).setDepth(TY + 1);
-      deco(TX, TY + 4, '💐', '34px');
-      deco(TX - 70, TY + 2, '🍾', '22px');
-      deco(TX + 70, TY + 2, '🎂', '24px');
-      deco(TX - 112, TY + 8, '🥂', '16px');
-      deco(TX + 112, TY + 8, '🥂', '16px');
+      deco(0, 4, '💐', 34);
+      deco(-70, 2, '🍾', 22);
+      deco(70, 2, '🎂', 24);
+      deco(-112, 8, '🥂', 16);
+      deco(112, 8, '🥂', 16);
     }
 
     // ---------------- Chữ, bảng xếp hạng, thông báo ----------------
@@ -282,8 +294,14 @@
     }
 
     update() {
-      // Ai đứng thấp hơn (y lớn hơn) thì vẽ đè lên trước
-      for (const p of this.guests) p.root.setDepth(p.root.y + (p.busy ? 5 : 0));
+      for (const p of this.guests) {
+        // Ai đứng thấp hơn (y lớn hơn) thì vẽ đè lên trước
+        p.root.setDepth(p.root.y + (p.busy ? 5 : 0));
+        // Nhãn tên & bong bóng chat giữ cỡ chữ dễ đọc dù nhân vật bị thu nhỏ
+        const inv = 1 / p.root.scaleX;
+        p.label.setScale(p.labelSize * p.labelPop * inv);
+        if (p.bubble && !p.bubble.popping) p.bubble.setScale(0.9 * inv);
+      }
     }
 
     // =================================================================
@@ -324,7 +342,8 @@
       guest.lastUsed = performance.now();
       const max = guest.compact ? 12 : 24;
       guest.label.setText(gift.nickname.length > max ? gift.nickname.slice(0, max) + '…' : gift.nickname);
-      this.tweens.add({ targets: guest.label, scale: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.out' });
+      guest.label.setVisible(true);
+      this.tweens.add({ targets: guest, labelPop: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.out' });
 
       const emoji = giftEmoji(gift.giftName);
       guest.gift.setText(emoji);
@@ -335,6 +354,7 @@
       const pathBack = [...guest.path].reverse().concat({ x: guest.homeX, y: guest.homeY });
 
       startWalk(this, guest, speed / 300);
+      this.tweens.add({ targets: guest.root, scale: WALK_SCALE, duration: 700 });      // đứng dậy đi lên: to dần
       this.walk(guest, pathUp, speed, () => {
         stopWalk(guest);
         setFacing(guest, 'back');                    // quay về phía cô dâu chú rể
@@ -342,6 +362,7 @@
           slot.busy = false;
           this.processQueue();
           startWalk(this, guest, speed / 300);
+          this.tweens.add({ targets: guest.root, scale: guest.baseScale, duration: 900 });  // về chỗ: nhỏ lại
           this.walk(guest, pathBack, speed, () => {
             stopWalk(guest);
             setFacing(guest, guest.seatFacing);
@@ -438,11 +459,12 @@
       const bubble = makeLabel(this, text.length > 40 ? text.slice(0, 40) + '…' : text,
         { fontSize: '14px', bg: 0xffffff, bgAlpha: 0.95, color: '#333333' });
       // giữ bong bóng nằm trong màn hình
-      const half = bubble.textObj.width / 2 + 12;
-      bubble.setPosition(Phaser.Math.Clamp(g.root.x, half + 8, W - half - 8) - g.root.x, -160);
+      const k = g.root.scaleX, half = (bubble.textObj.width / 2 + 12) * 0.9;
+      bubble.setPosition((Phaser.Math.Clamp(g.root.x, half + 8, W - half - 8) - g.root.x) / k, -160);
       g.root.add(bubble);
       g.bubble = bubble;
-      this.tweens.add({ targets: bubble, scale: { from: 0, to: 1 }, duration: 250, ease: 'Back.out' });
+      bubble.popping = true;
+      this.tweens.add({ targets: bubble, scale: { from: 0, to: 0.9 / k }, duration: 250, ease: 'Back.out', onComplete: () => bubble.popping = false });
       this.after(4000, () => { if (g.bubble === bubble) { bubble.destroy(); g.bubble = null; } });
     }
 
@@ -476,7 +498,7 @@
 
     onReset() {
       this.queue = [];
-      this.guests.forEach((g, i) => { g.userId = null; g.label.setText('Khách ' + (i + 1)); });
+      this.guests.forEach((g, i) => { g.userId = null; g.label.setText('Khách ' + (i + 1)); g.label.setVisible(!g.hideLabel); });
       this.processQueue();
     }
 

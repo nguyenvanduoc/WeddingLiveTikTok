@@ -11,11 +11,17 @@ public class WeddingOptions
     public string GroomName { get; set; } = "Chú Rể";
     public string Title { get; set; } = "Đám Cưới Online";
 
-    /// <summary>Số khách ngồi ở dưới (tối thiểu 4, tối đa 24).</summary>
-    public int GuestCount { get; set; } = 12;
+    /// <summary>
+    /// Số khách ĐỨNG. Có bàn tiệc: đứng 2 bên sân khấu (0 - 12).
+    /// Không có bàn (Tables = 0): đứng 2 bên lối đi (4 - 24).
+    /// </summary>
+    public int GuestCount { get; set; } = 6;
 
-    /// <summary>Số người ngồi ở bàn tiệc cuối thảm đỏ (0 = không có bàn, tối đa 12).</summary>
-    public int TableGuests { get; set; } = 10;
+    /// <summary>Số bàn tròn (0 - 5). 0 = không có bàn.</summary>
+    public int Tables { get; set; } = 5;
+
+    /// <summary>Số khách ngồi mỗi bàn (4 - 12).</summary>
+    public int GuestsPerTable { get; set; } = 10;
 
     /// <summary>
     /// Khóa bí mật mà bridge / TikFinity phải gửi trong header X-Api-Key (hoặc ?key=).
