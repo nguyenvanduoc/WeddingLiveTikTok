@@ -108,6 +108,24 @@
   refreshVoiceStatus();
   setInterval(refreshVoiceStatus, 4000);
 
+  // Cảnh báo to khi server đang chạy bản cũ (đã git pull nhưng chưa chạy lại)
+  async function checkServerVersion() {
+    let msg = '';
+    try {
+      const res = await fetch('/api/version');
+      if (res.status === 404) msg = 'cũ';
+      else if (res.ok && (await res.json()).stale) msg = 'cũ';
+    } catch { msg = 'tắt'; }
+    const el = $('serverBanner');
+    el.hidden = !msg;
+    el.innerHTML = msg === 'tắt'
+      ? '❌ Không kết nối được server. Chạy lại: <code>npm run server</code>'
+      : '⚠️ Server đang chạy BẢN CŨ (code đã cập nhật bằng git pull nhưng server chưa chạy lại) → giọng/tốc độ/tính năng mới chưa có tác dụng.<br>'
+        + 'Tắt cửa sổ server (Ctrl+C) rồi chạy lại: <code>npm run server</code> (ở thư mục gốc) hoặc bấm đúp <code>start-server.bat</code>, sau đó F5 trang này.';
+  }
+  checkServerVersion();
+  setInterval(checkServerVersion, 10000);
+
   async function diagnose() {
     const out = $('diag'); out.hidden = false; out.textContent = '';
     const add = (s) => { out.textContent += s + '\n'; };
@@ -139,16 +157,27 @@
 
   // Bật/tắt tiếng khung xem trước (nhớ lựa chọn trong trình duyệt)
   const pv = $('previewVoice');
-  try { pv.checked = localStorage.getItem('previewVoice') === '1'; } catch { }
+  let saved = null;
+  try { saved = localStorage.getItem('previewVoice'); } catch { }
   const applyPreview = () => { $('stageFrame').src = pv.checked ? '/?voice=1' : '/?voice=0'; };
-  if (pv.checked) applyPreview();
+  if (saved !== null) {
+    pv.checked = saved === '1';
+    if (pv.checked) applyPreview();
+  } else {
+    // Chưa từng chọn: nếu chưa có trang sân khấu nào phát tiếng (OBS, tab khác) thì tự bật tiếng khung này
+    getVoiceStatus().then(s => {
+      if (!s.stages.some(x => x.voiceOn)) { pv.checked = true; applyPreview(); }
+    }).catch(() => { });
+  }
   pv.addEventListener('change', () => { try { localStorage.setItem('previewVoice', pv.checked ? '1' : '0'); } catch { } applyPreview(); });
 
   // Câu mẫu lấy từ cấu hình giọng đọc: bấm để đưa vào ô MC
   Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])
     .then(([w, v]) => {
       clientSpeed = v.clientSpeed || 1;
-      $('voiceInfo').textContent = v.enabled ? `(giọng: ${v.provider}, tốc độ x${v.speed})` : '(đang tắt – Voice:Enabled = false)';
+      $('voiceInfo').textContent = !v.enabled ? '(đang tắt – Voice:Enabled = false)'
+        : v.speed === undefined ? '(server bản cũ – chạy lại npm run server)'
+        : `(giọng: ${v.provider}, tốc độ x${v.speed})`;
       const fill = (t) => t.replaceAll('{bride}', w.brideName).replaceAll('{groom}', w.groomName);
       (v.announcements || []).slice(0, 7).forEach((t, i) => {
         const b = document.createElement('button');

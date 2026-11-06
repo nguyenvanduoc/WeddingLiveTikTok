@@ -169,7 +169,7 @@
 
     mcSpeak(text) {
       const w = 300;
-      this.subText.setText('🎤 ' + text);
+      this.subText.setText((voice.silent ? '🔇 (khung này tắt tiếng) ' : '🎤 ') + text);
       const h = this.subText.height + 20;
       const tipX = 372 - 20 - 16, tipY = 352 - 145 - 118;          // đầu MC, tính theo gốc khung phụ đề
       const by = Phaser.Math.Clamp(tipY, 18, h - 18);

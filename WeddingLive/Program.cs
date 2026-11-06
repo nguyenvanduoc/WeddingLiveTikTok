@@ -46,4 +46,17 @@ app.MapLiveEndpoints();
 app.MapVoiceEndpoints();
 app.MapGet("/health", () => Results.Ok("OK"));
 
+// Phát hiện "đã git pull code mới nhưng chưa chạy lại server": file .cs mới hơn file .dll đang chạy
+app.MapGet("/api/version", (IWebHostEnvironment env) =>
+{
+    var builtAt = File.GetLastWriteTimeUtc(typeof(Program).Assembly.Location);
+    var sep = Path.DirectorySeparatorChar;
+    var newestSource = Directory.EnumerateFiles(env.ContentRootPath, "*.cs", SearchOption.AllDirectories)
+        .Where(f => !f.Contains($"{sep}bin{sep}") && !f.Contains($"{sep}obj{sep}"))
+        .Select(File.GetLastWriteTimeUtc)
+        .DefaultIfEmpty(builtAt)
+        .Max();
+    return Results.Ok(new { builtAt, newestSource, stale = newestSource > builtAt.AddSeconds(5) });
+});
+
 app.Run();

@@ -167,6 +167,8 @@
       onStateChange(fn) { onState = fn; },
       get state() { return state; },
       muted: MUTED_BY_URL,
+      /** Trang này không phát tiếng (tắt bằng ?voice=0 hoặc Voice:Enabled = false). */
+      get silent() { return MUTED_BY_URL || !cfg.enabled; },
       /** MC: gọi khi bắt đầu nói (kèm câu đang nói) và khi im lặng. */
       onSpeech(start, end) { onSpeak = start; onSilent = end; },
       /** Cập nhật người tặng nhiều nhất (bảng xếp hạng). */
