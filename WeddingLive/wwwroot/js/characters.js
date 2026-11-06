@@ -18,15 +18,17 @@
   const BW = 96, BH = 140, OX = 48, OY = 134;
 
   /** Vẽ 1 lần vào texture `key` rồi trả về Image dùng texture đó. */
-  function baked(scene, key, w, h, ox, oy, draw) {
+  /** res = độ phân giải (2 = vẽ gấp đôi rồi thu nhỏ lại => nét hơn khi phóng to). */
+  function baked(scene, key, w, h, ox, oy, draw, res = 1) {
     if (!scene.textures.exists(key)) {
       const g = scene.make.graphics({ add: false });
-      g.translateCanvas(ox, oy);     // dời gốc vẽ vào trong khung ảnh
+      g.translateCanvas(ox * res, oy * res);   // dời gốc vẽ vào trong khung ảnh
+      if (res !== 1) g.scaleCanvas(res, res);
       draw(g);
-      g.generateTexture(key, w, h);
+      g.generateTexture(key, w * res, h * res);
       g.destroy();
     }
-    return scene.add.image(0, 0, key).setOrigin(ox / w, oy / h);
+    return scene.add.image(0, 0, key).setOrigin(ox / w, oy / h).setScale(1 / res);
   }
 
   // Ngoại hình khách theo số thứ tự: 12 khách đầu khác màu áo, sau đó xoay vòng lệch nhau
@@ -131,24 +133,94 @@
     g.fillStyle(0x111111, 1).fillEllipse(0, -106, 36, 16).fillEllipse(-10, -104, 16, 12);
   }
 
-  // MC: áo dài đỏ, búi tóc cài hoa, tay phải cầm micro
+  // MC: áo dài đỏ thêu hoa sen, búi tóc cài trâm, tay phải cầm micro
   function drawMC(g) {
-    const skin = 0xffe0bd, hair = 0x1a1110, red = 0xc9184a, gold = 0xffd166;
-    g.fillStyle(hair, 1).fillRoundedRect(-17, -108, 34, 28, 12);                     // tóc phía sau
-    g.fillStyle(red, 1).fillRoundedRect(-17, -82, 34, 40, 9);                        // thân áo dài
-    g.fillStyle(red, 1).fillRect(-12, -46, 24, 40);                                  // tà áo trước
-    g.fillStyle(0xa4133c, 1).fillRect(-12, -46, 3, 40).fillRect(9, -46, 3, 40);      // viền tà
-    g.fillStyle(gold, 1).fillRect(-6, -82, 12, 4);                                   // cổ áo
-    [[-4, -66], [5, -58], [-3, -36], [4, -24], [-4, -14]].forEach(([x, y]) => g.fillCircle(x, y, 2.5));   // hoa văn
-    g.fillStyle(red, 1).fillRoundedRect(-25, -78, 8, 30, 4);                         // tay trái buông
-    g.fillStyle(red, 1).fillRoundedRect(17, -80, 8, 18, 4).fillRoundedRect(17, -96, 8, 20, 4);  // tay phải giơ micro
-    g.fillStyle(skin, 1).fillCircle(-21, -46, 4).fillCircle(21, -96, 4);
-    drawFace(g, -96, skin);
-    g.fillStyle(0x333333, 1).fillRoundedRect(19, -106, 5, 14, 2);                    // micro
-    g.fillStyle(0x777777, 1).fillCircle(21.5, -108, 5.5);
-    g.fillStyle(hair, 1).fillEllipse(0, -106, 36, 18).fillCircle(0, -118, 8);        // tóc + búi
-    g.fillStyle(0xffffff, 1).fillCircle(9, -113, 3.5);                               // hoa cài tóc
-    g.fillStyle(0xff8fab, 1).fillCircle(9, -113, 1.5);
+    const skin = 0xffe0bd, skinShade = 0xf3c9a5, hair = 0x1a1110, hairHi = 0x3a2418;
+    const red = 0xd0103a, redDark = 0x9d0b2c, redLight = 0xe8355a, gold = 0xffc94a, goldDark = 0xd99a1e;
+    const P = (pts) => pts.map(([x, y]) => ({ x, y }));
+
+    // Tóc dài phía sau lưng
+    g.fillStyle(hair, 1).fillRoundedRect(-15, -108, 30, 52, 12);
+
+    // Tà sau (đậm hơn, lộ ra 2 bên) + tà trước
+    g.fillStyle(redDark, 1).fillPoints(P([[-15, -50], [15, -50], [20, -5], [-20, -5]]), true);
+    g.fillStyle(red, 1).fillPoints(P([[-11, -50], [11, -50], [13, -5], [-13, -5]]), true);
+    g.lineStyle(1.5, gold, 1).strokePoints(P([[-11, -50], [-13, -5], [13, -5], [11, -50]]), false);
+    // Hoa sen thêu trên tà trước
+    const lotus = (cx, cy, r) => {
+      g.fillStyle(gold, 1);
+      [[-1, 0], [1, 0], [0, -1], [-0.7, -0.7], [0.7, -0.7]].forEach(([dx, dy]) => g.fillEllipse(cx + dx * r, cy + dy * r, r * 1.2, r * 1.6));
+      g.fillStyle(0xfff1c1, 1).fillCircle(cx, cy - r * 0.2, r * 0.45);
+    };
+    lotus(0, -30, 3.6);
+    g.lineStyle(1.2, goldDark, 1);
+    g.beginPath(); g.moveTo(0, -26); g.lineTo(0, -12); g.strokePath();               // cành sen
+    g.fillStyle(goldDark, 1).fillEllipse(-4, -18, 6, 3).fillEllipse(4, -14, 6, 3);   // lá
+    g.fillStyle(gold, 1).fillCircle(-6, -40, 1.4).fillCircle(6, -42, 1.4).fillCircle(-7, -9, 1.2).fillCircle(7, -9, 1.2);
+
+    // Thân áo ôm dáng: vai - eo thon - hông
+    g.fillStyle(red, 1).fillPoints(P([[-15, -82], [15, -82], [16, -74], [11, -58], [13, -48], [-13, -48], [-11, -58], [-16, -74]]), true);
+    g.fillStyle(redLight, 0.55).fillPoints(P([[-6, -80], [3, -80], [1, -58], [-5, -58]]), true);   // ánh sáng trên vải
+    g.fillStyle(gold, 1).fillCircle(-8, -70, 1.6).fillCircle(8, -66, 1.6).fillCircle(0, -62, 1.4);
+    g.lineStyle(1.2, gold, 0.9).strokePoints(P([[-11, -58], [11, -58]]), false);   // đường eo
+
+    // Cổ + cổ áo vàng
+    g.fillStyle(skinShade, 1).fillRect(-4, -88, 8, 7);
+    g.fillStyle(gold, 1).fillRoundedRect(-7, -86, 14, 6, 2);
+    g.fillStyle(goldDark, 1).fillRect(-1, -86, 2, 6);
+
+    // Tay trái buông (tay áo dài)
+    g.fillStyle(red, 1).fillPoints(P([[-15, -80], [-22, -78], [-26, -52], [-20, -50]]), true);
+    g.fillStyle(gold, 1).fillPoints(P([[-26, -54], [-20, -52], [-20, -49], [-26, -51]]), true);
+    g.fillStyle(skin, 1).fillCircle(-23, -46, 4);
+
+    // Tay phải co lên cầm micro
+    g.fillStyle(red, 1).fillPoints(P([[15, -80], [22, -78], [27, -63], [20, -60]]), true);    // cánh tay
+    g.fillStyle(red, 1).fillPoints(P([[20, -64], [27, -62], [25, -90], [19, -90]]), true);    // cẳng tay
+    g.fillStyle(gold, 1).fillPoints(P([[19, -90], [25, -90], [25, -87], [19, -87]]), true);
+
+    // Mặt
+    g.fillStyle(skin, 1).fillCircle(0, -96, 16);
+    g.fillStyle(skinShade, 1).fillEllipse(0, -82, 14, 4);                              // bóng cằm
+    g.fillStyle(0xff8fab, 0.5).fillEllipse(-10, -89, 7, 4).fillEllipse(10, -89, 7, 4);    // má hồng
+    // Mắt to + điểm sáng + mi
+    g.fillStyle(0x2a1610, 1).fillEllipse(-6, -95.5, 5.6, 7).fillEllipse(6, -95.5, 5.6, 7);
+    g.fillStyle(0xffffff, 1).fillCircle(-5, -97.2, 1.5).fillCircle(7, -97.2, 1.5).fillCircle(-7, -94, 0.7).fillCircle(5, -94, 0.7);
+    g.lineStyle(1.4, 0x2a1610, 1);
+    g.beginPath(); g.moveTo(-9.5, -99); g.lineTo(-11, -100.5); g.strokePath();
+    g.beginPath(); g.moveTo(9.5, -99); g.lineTo(11, -100.5); g.strokePath();
+    // Lông mày
+    g.lineStyle(1.3, 0x3a2418, 1);
+    g.beginPath(); g.arc(-6, -98, 5, 1.2 * Math.PI, 1.8 * Math.PI); g.strokePath();   // mày cong nhẹ, vui vẻ
+    g.beginPath(); g.arc(6, -98, 5, 1.2 * Math.PI, 1.8 * Math.PI); g.strokePath();
+    // Môi
+    g.fillStyle(0xd81b45, 1).fillEllipse(0, -88, 6.5, 3);
+    g.fillStyle(0xff6b8a, 1).fillEllipse(0, -88.6, 3, 1.2);
+    // Bông tai
+    g.fillStyle(gold, 1).fillCircle(-15.5, -91, 1.8).fillCircle(15.5, -91, 1.8);
+    g.fillStyle(0xffffff, 1).fillCircle(-15.5, -88, 1.6).fillCircle(15.5, -88, 1.6);
+
+    // Tóc trước: mái lệch + búi cao + trâm + hoa
+    // (mái nằm trên lông mày, không che mắt)
+    g.fillStyle(hair, 1).fillEllipse(0, -111, 36, 16);
+    g.fillPoints(P([[-17.5, -108], [-4, -117], [8, -109], [-7, -105.5], [-16.5, -99]]), true);   // mái lệch trái, ôm thái dương
+    g.fillPoints(P([[17.5, -108], [10, -115], [6, -109], [16.5, -99]]), true);
+    g.fillStyle(hairHi, 1).fillEllipse(-4, -114, 14, 3.5);                               // bóng tóc
+    g.fillStyle(hair, 1).fillCircle(0, -122, 9.5);                                        // búi
+    g.fillStyle(hairHi, 1).fillEllipse(-2, -125, 8, 3);
+    g.lineStyle(1.6, gold, 1); g.beginPath(); g.moveTo(-13, -127); g.lineTo(8, -117); g.strokePath();   // trâm cài
+    g.fillStyle(gold, 1).fillCircle(-13, -127, 2.2);
+    [[0, -3], [3, -1], [2, 2.5], [-2, 2.5], [-3, -1]].forEach(([dx, dy]) => g.fillStyle(0xff3d6e, 1).fillCircle(11 + dx, -116 + dy, 2.4));   // hoa
+    g.fillStyle(0xffe066, 1).fillCircle(11, -116, 1.5);
+
+    // Micro bạc (đưa sát miệng) + tay cầm
+    g.fillStyle(0x2b2b33, 1).fillPoints(P([[19, -100], [23, -100], [24, -88], [20, -88]]), true);
+    g.fillStyle(0xff3d6e, 1).fillRect(19.5, -96, 4, 2);
+    g.fillStyle(0xc9ccd6, 1).fillCircle(21, -104, 6);
+    g.lineStyle(0.8, 0x7d8290, 1);
+    [-2.5, 0, 2.5].forEach(d => { g.beginPath(); g.moveTo(16, -104 + d); g.lineTo(26, -104 + d); g.strokePath(); });
+    g.fillStyle(0xffffff, 0.7).fillCircle(19, -106, 1.6);
+    g.fillStyle(skin, 1).fillCircle(22, -91, 4.2);                                       // ngón tay ôm micro
   }
 
   // ---------- Chân (ảnh riêng, xoay quanh hông để đung đưa khi đi) ----------
@@ -180,16 +252,16 @@
 
     let mouth = null;
     if (type === 'bride') {
-      body = baked(scene, 'bride_body', BW, BH, OX, OY, drawBride);
+      body = baked(scene, 'bride_body', BW, BH, OX, OY, drawBride, 2);
     } else if (type === 'mc') {
       legL = makeLeg(scene, -6, 0xfff4f8, 0xc9184a);
       legR = makeLeg(scene, 6, 0xfff4f8, 0xc9184a);
-      body = baked(scene, 'mc_body', BW, BH, OX, OY, drawMC);
-      mouth = scene.add.ellipse(0, -90, 8, 6, 0x8a3b2b).setVisible(false);       // miệng mở khi nói
+      body = baked(scene, 'mc_body3', BW, BH, OX, OY, drawMC, 2);
+      mouth = scene.add.ellipse(0, -87.5, 6.5, 5, 0x8a1030).setVisible(false);    // miệng mở khi nói (đè lên môi)
     } else if (type === 'groom') {
       legL = makeLeg(scene, -7, 0x1d1d2b, 0x0d0d0d);
       legR = makeLeg(scene, 7, 0x1d1d2b, 0x0d0d0d);
-      body = baked(scene, 'groom_body', BW, BH, OX, OY, drawGroom);
+      body = baked(scene, 'groom_body', BW, BH, OX, OY, drawGroom, 2);
     } else {
       const l = guestLook(index), k = lookKey(l);
       legL = makeLeg(scene, l.female ? -6 : -7, l.female ? l.skin : l.pants, l.female ? 0x5c3d2e : 0x222222);
