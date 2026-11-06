@@ -12,7 +12,7 @@
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 3000, walkSpeed: 240 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 5000, walkSpeed: 240 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -401,10 +401,10 @@
       const now = performance.now();
       if (now - this.lastReal < (cfg.idleAfterSeconds ?? 6) * 1000) return;   // vừa có hoạt động thật
       if (now < this.idleNext || this.queue.length || this.coupleBusy) return;
-      this.idleNext = now + (cfg.idleEverySeconds ?? 8) * 1000 * (0.7 + Math.random() * 0.6);
+      this.idleNext = now + (cfg.idleEverySeconds ?? 15) * 1000 * (0.7 + Math.random() * 0.6);
       const r = Math.random();
-      if (r < 0.35) this.npcVisit();
-      else if (r < 0.65) this.npcChat();
+      if (r < 0.25) this.npcVisit();
+      else if (r < 0.6) this.npcChat();
       else if (r < 0.9) voice.idleLine();          // MC: "Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!"
       else { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
     }
@@ -560,8 +560,46 @@
     // =================================================================
     //  XỬ LÝ QUÀ
     // =================================================================
+    // ---------------- Ảnh quà TikTok ----------------
+    giftKey(gift) {
+      if (!gift.giftImageUrl) return null;
+      let h = 0;
+      for (const ch of gift.giftImageUrl) h = (h * 31 + ch.charCodeAt(0)) | 0;
+      return 'gimg_' + (h >>> 0).toString(36);
+    }
+
+    /** Tải ảnh quà từ máy chủ TikTok (1 lần, dùng lại). Trả về key nếu ảnh đã sẵn sàng. */
+    ensureGiftImage(gift) {
+      const key = this.giftKey(gift);
+      if (!key || this.failedImages?.has(key)) return null;
+      if (this.textures.exists(key)) return key;
+      if (!this.loadingImages?.has(key)) {
+        (this.loadingImages ||= new Set()).add(key);
+        this.load.setCORS('anonymous');
+        this.load.image(key, gift.giftImageUrl);
+        this.load.once('loaderror', (file) => { if (file.key === key) (this.failedImages ||= new Set()).add(key); });
+        this.load.start();
+      }
+      return null;
+    }
+
+    /** Hình món quà: ảnh TikTok nếu có, không thì emoji. size = cạnh dài (px). */
+    makeGiftVisual(gift, x, y, size, emoji) {
+      const key = this.ensureGiftImage(gift);
+      if (key) {
+        const img = this.add.image(x, y, key);
+        img.setScale(size / Math.max(img.width, img.height));
+        img.baseScale = img.scale;
+        return img;
+      }
+      const t = this.add.text(x, y, emoji, { fontFamily: FONT, fontSize: Math.round(size * 0.85) + 'px' }).setOrigin(0.5);
+      t.baseScale = 1;
+      return t;
+    }
+
     onGift(gift) {
       this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
+      this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -577,7 +615,7 @@
     processQueue() {
       while (this.queue.length) {
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
-        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 3000) - performance.now();
+        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 5000) - performance.now();
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
@@ -620,7 +658,13 @@
       }
 
       const emoji = gift.npc ? gift.emoji : giftEmoji(gift.giftName);
-      guest.gift.setText(emoji);
+      guest.heldGift?.destroy();
+      guest.heldGift = null;
+      if (!gift.npc && this.ensureGiftImage(gift)) {         // cầm đúng hình quà TikTok
+        guest.gift.setText('');
+        guest.heldGift = this.makeGiftVisual(gift, 24, -50, 32, emoji);
+        guest.puppet.add(guest.heldGift);
+      } else guest.gift.setText(emoji);
       if (!gift.npc) voice.announceGift(gift);     // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
 
       // Hàng đợi dài => đi nhanh hơn
@@ -673,12 +717,16 @@
     present(guest, gift, emoji, slot, onDone) {
       const big = !gift.npc && isBig(gift);
       guest.gift.setText('');
+      guest.heldGift?.destroy();
+      guest.heldGift = null;
       // Quà bay về phía cô dâu (slot trái), chú rể (slot phải) hoặc chính giữa
       const tx = CENTER_X + (slot.x - CENTER_X) * 0.45, ty = 225;
 
       // Quà bay từ tay khách lên giữa cô dâu chú rể
-      const fly = this.add.text(guest.root.x + 24, guest.root.y - 50, emoji, { fontFamily: FONT, fontSize: '30px' })
-        .setOrigin(0.5).setDepth(970);
+      const fly = (gift.npc
+        ? this.add.text(guest.root.x + 24, guest.root.y - 50, emoji, { fontFamily: FONT, fontSize: '30px' }).setOrigin(0.5)
+        : this.makeGiftVisual(gift, guest.root.x + 24, guest.root.y - 50, 36, emoji)).setDepth(970);
+      fly.baseScale ??= 1;
       const countTxt = gift.count > 1
         ? this.add.text(tx + 28, ty - 10, 'x' + gift.count, { fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#ffd166', stroke: '#7b2cbf', strokeThickness: 5 }).setOrigin(0, 0.5).setDepth(971).setAlpha(0)
         : null;
@@ -687,7 +735,7 @@
       this.tweens.add({ targets: guest.puppet, angle: -8, duration: 220, yoyo: true });
 
       this.tweens.add({
-        targets: fly, x: tx, y: ty, scale: big ? 3 : 2, duration: 650, ease: 'Cubic.out',
+        targets: fly, x: tx, y: ty, scale: fly.baseScale * (big ? 3 : 2), duration: 650, ease: 'Cubic.out',
         onComplete: () => {
           if (countTxt) this.tweens.add({ targets: countTxt, alpha: 1, duration: 200 });
           this.hearts.explode(big ? 50 : gift.npc ? 10 : 18, tx, ty + 10);

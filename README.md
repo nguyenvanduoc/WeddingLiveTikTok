@@ -6,6 +6,7 @@ Game đám cưới chạy trên web (ASP.NET Core 8 + Phaser 3 + SignalR), kết
 - Có người **tặng quà** trên live → 1 khách **đổi tên theo người tặng**, cầm quà đi lên tặng cô dâu chú rể rồi về chỗ.
 - Quà lớn (≥ 99💎) → pháo hoa, chớp sáng, cô dâu chú rể nhảy lên.
 - **Bình luận** → khách nói bong bóng chat. **Thả tim** → tim bay. **Follow/Share** → thông báo.
+- Khách cầm và trao **đúng hình quà TikTok** (ảnh lấy từ máy chủ TikTok trong sự kiện quà; không có ảnh thì dùng emoji).
 - Bảng **Top tặng quà**, hàng đợi khi đông, combo (Rose x15) được gộp thành 1 lượt.
 - **MC ảo đọc tiếng Việt**: tự giới thiệu đám cưới khi sân khấu yên lặng, cảm ơn từng người tặng quà / follow, admin gõ câu cho MC đọc.
 
@@ -45,7 +46,7 @@ Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
 ### 🧪 Chế độ DEMO (test không cần live)
 
 Chưa điền `TIKTOK_USERNAME` trong `tiktok-bridge/.env` (file tự tạo lần đầu chạy) → bridge tự tạo **quà, bình luận, tim, follow giả**
-khoảng mỗi 15 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
+khoảng mỗi 20 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
 Đặt `DEMO=true` để luôn chạy demo, `DEMO_INTERVAL_MS` để chỉnh nhịp.
 
 ## Chạy thử (không cần live)
@@ -103,7 +104,7 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 ## 🎉 Sân khấu tự sinh động khi vắng (ưu tiên dữ liệu TikTok)
 
 Mới live ít người: sau `IdleAfterSeconds` (6s) không có quà / bình luận / follow thật, **khách mời trong tiệc tự hoạt động**
-khoảng mỗi `IdleEverySeconds` (8s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
+khoảng mỗi `IdleEverySeconds` (15s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
 MC mời gọi người xem (`Voice:IdleLines`).
 
 - Mỗi lượt khách mời mang **tên vai trong tiệc** (Bác Tư, Cô Hoa, Bạn thân cô dâu, Đồng nghiệp chú rể…) với **nhãn tím** và **quà truyền thống** khác nhau (🧧 phong bì, 🍾 rượu, 🎂 bánh cưới, 🧸 gấu bông…), không lặp gần nhau; MC: "Bác Tư lên trao phong bì mừng cô dâu chú rể!" (`Voice:NpcLines`).
@@ -198,7 +199,7 @@ cách đọc tên quà ở `Voice:GiftNames` (ví dụ `"Rose": "bông hồng"`)
   "ApiKey": "",              // đặt khóa bí mật khi chạy trên server public
   "BigGiftDiamonds": 99,     // từ mức này trở lên bắn pháo hoa
   "DispatchDelayMs": 250,    // giãn cách giữa 2 quà gửi xuống sân khấu
-  "GiftPacingMs": 3000,      // 2 khách lần lượt lên tặng cách nhau ít nhất 3s (chỉnh nhanh bằng thanh trượt trong admin)
+  "GiftPacingMs": 5000,      // 2 khách lần lượt lên tặng cách nhau ít nhất 5s (chỉnh nhanh bằng thanh trượt trong admin)
   "WalkSpeed": 240           // tốc độ đi của khách (pixel/giây)
 }
 ```

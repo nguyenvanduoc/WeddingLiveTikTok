@@ -11,6 +11,7 @@ public record GiftEvent
     public string GiftName { get; init; } = "Gift"; // "Rose", "Heart Me", "Galaxy"...
     public int Count { get; init; } = 1;            // số lượng (repeatCount)
     public int DiamondValue { get; init; }          // giá kim cương của 1 món quà
+    public string? GiftImageUrl { get; init; }      // ảnh món quà trên máy chủ TikTok (để sân khấu hiện đúng hình quà)
     public long TotalDiamonds => (long)DiamondValue * Math.Max(1, Count);
 }
 

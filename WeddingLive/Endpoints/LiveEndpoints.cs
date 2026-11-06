@@ -119,7 +119,11 @@ public static class LiveEndpoints
         Nickname = Clean(g.Nickname, g.UserId),
         GiftName = string.IsNullOrWhiteSpace(g.GiftName) ? "Gift" : Truncate(g.GiftName.Trim(), 30),
         Count = Math.Clamp(g.Count, 1, 9999),
-        DiamondValue = Math.Max(0, g.DiamondValue)
+        DiamondValue = Math.Max(0, g.DiamondValue),
+        // Chỉ nhận ảnh https từ máy chủ ảnh của TikTok
+        GiftImageUrl = Uri.TryCreate(g.GiftImageUrl, UriKind.Absolute, out var u) && u.Scheme == "https"
+                       && (u.Host.EndsWith(".tiktokcdn.com") || u.Host.EndsWith(".tiktokcdn-us.com") || u.Host.EndsWith(".tiktokcdn-eu.com") || u.Host.EndsWith(".ibyteimg.com"))
+            ? g.GiftImageUrl : null
     };
 
     private static string Clean(string? nickname, string? userId)

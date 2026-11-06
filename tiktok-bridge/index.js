@@ -73,8 +73,20 @@ function giftInfo(d) {
     name: first(d.giftDetails?.giftName, d.gift?.name, d.extendedGiftInfo?.name, `Gift#${d.giftId}`),
     type: Number(first(d.giftDetails?.giftType, d.gift?.type, 0)),
     diamonds: Number(first(d.giftDetails?.diamondCount, d.gift?.diamondCount, d.extendedGiftInfo?.diamond_count, 1)),
-    count: Number(first(d.repeatCount, d.comboCount, 1)) || 1
+    count: Number(first(d.repeatCount, d.comboCount, 1)) || 1,
+    imageUrl: giftImage(d)
   };
+}
+
+// Link ảnh món quà trên máy chủ TikTok (ưu tiên .png). Tên field khác nhau giữa các version => thử lần lượt.
+function giftImage(d) {
+  const lists = [d.gift?.image?.urlList, d.gift?.icon?.urlList, d.giftDetails?.giftImage?.urlList,
+    d.extendedGiftInfo?.image?.url_list, d.extendedGiftInfo?.icon?.url_list].filter(l => Array.isArray(l) && l.length);
+  for (const l of lists) {
+    const png = l.find(u => /\.png(\?|$)/i.test(u));
+    if (png || l[0]) return png || l[0];
+  }
+  return first(d.giftDetails?.giftImage?.giftPictureUrl, d.gift?.image?.url) ?? null;
 }
 
 // =====================================================================
@@ -93,8 +105,8 @@ function startLive() {
     const g = giftInfo(d);
     if (g.type === 1 && !d.repeatEnd) return;
     const user = mapUser(d.user);
-    console.log(`🎁 ${user.nickname} tặng ${g.count} x ${g.name} (${g.diamonds}💎/cái)`);
-    post('gift', { ...user, giftName: g.name, count: g.count, diamondValue: g.diamonds });
+    console.log(`🎁 ${user.nickname} tặng ${g.count} x ${g.name} (${g.diamonds}💎/cái)${g.imageUrl ? ' 🖼️' : ''}`);
+    post('gift', { ...user, giftName: g.name, count: g.count, diamondValue: g.diamonds, giftImageUrl: g.imageUrl });
   });
 
   connection.on(WebcastEvent.CHAT, (d) => {
@@ -215,7 +227,7 @@ function startLive() {
 }
 
 if (DEMO) {
-  runDemo({ post, server: SERVER, intervalMs: Number(process.env.DEMO_INTERVAL_MS) || 15000 });
+  runDemo({ post, server: SERVER, intervalMs: Number(process.env.DEMO_INTERVAL_MS) || 20000 });
 } else {
   startLive();
 }
