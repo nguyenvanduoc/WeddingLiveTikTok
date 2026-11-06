@@ -979,6 +979,7 @@
           ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
            'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicMaxSeconds', 'musicStopOnGift'].forEach(k => { if (k in c) cfg[k] = c[k]; });
           music.duck(false);                             // áp âm lượng mới ngay
+          music.setOff(!MUSIC_ON());
         } catch { }
       });
       conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset
@@ -989,10 +990,14 @@
       // Báo trạng thái giọng về server (trang admin hiển thị để chẩn đoán)
       const report = () => conn.state === 'Connected' && conn.invoke('ReportVoiceState', voice.state).catch(() => { });
       voice.onStateChange(report);
-      conn.onreconnected(report);
+      // Trạng thái nhạc (đang phát / chờ bài / bị chặn / tắt) => admin hiển thị
+      const reportMusic = () => conn.state === 'Connected' && conn.invoke('ReportMusicState', music.state).catch(() => { });
+      music.setOff(!MUSIC_ON());
+      music.onStateChange(reportMusic);
+      conn.onreconnected(() => { report(); reportMusic(); });
 
       const start = async () => {
-        try { await conn.start(); console.log('SignalR connected'); report(); }
+        try { await conn.start(); console.log('SignalR connected'); report(); reportMusic(); }
         catch (err) { console.warn('SignalR lỗi, thử lại sau 3s', err); setTimeout(start, 3000); }
       };
       conn.onclose(() => setTimeout(start, 3000));   // hết lượt auto-reconnect thì tự thử lại

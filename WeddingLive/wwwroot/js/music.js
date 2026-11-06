@@ -45,6 +45,27 @@
   function create(getCfg) {
     let ctx = null, master = null, audio = null, playing = false, stopTimer = null;
     let files = [], fileOrder = [], pieceIndex = 0, ducked = false, onEnd = () => { };
+    // Trạng thái báo về admin: waiting (chờ tới lượt) | playing | blocked (trình duyệt chặn) | off
+    let state = 'waiting', onState = () => { };
+    const setState = (s) => { if (s !== state) { state = s; onState(s); } };
+
+    // Trình duyệt chặn âm thanh khi chưa có thao tác của người dùng => bấm/chạm bất kỳ đâu là mở khóa
+    function unlock() {
+      if (ctx && ctx.state === 'suspended') ctx.resume().then(() => { if (playing) setState('playing'); }).catch(() => { });
+      if (audio && audio.paused && playing) audio.play().then(() => setState('playing')).catch(() => { });
+      document.querySelector('.music-unlock')?.remove();
+    }
+    ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, unlock, { passive: true }));
+
+    function showBlocked() {
+      setState('blocked');
+      if (document.querySelector('.music-unlock, .voice-unlock')) return;   // đã có nút bật tiếng
+      const btn = document.createElement('button');
+      btn.className = 'voice-unlock music-unlock';
+      btn.textContent = '🔊 Bấm để bật nhạc & giọng MC';
+      btn.onclick = unlock;
+      document.body.appendChild(btn);
+    }
     const vol = () => Math.max(0, Math.min(1, getCfg().musicVolume ?? 0.35));
     const target = () => vol() * (ducked ? 0.3 : 1);
 
@@ -71,7 +92,9 @@
 
     function playSynth() {
       ctx ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+      // Sau 0,5s vẫn "suspended" => trình duyệt đang chặn tiếng
+      setTimeout(() => { if (playing && ctx.state === 'suspended') showBlocked(); else if (playing) setState('playing'); }, 500);
       master = ctx.createGain();
       master.gain.value = target();
       master.connect(ctx.destination);
@@ -102,7 +125,10 @@
       audio.volume = target();
       audio.onended = () => finish();
       audio.onerror = () => { audio = null; playSynth(); };
-      audio.play().catch(() => { audio = null; playSynth(); });
+      audio.play().then(() => setState('playing')).catch((err) => {
+        if (err && err.name === 'NotAllowedError') showBlocked();   // bị chặn: giữ bài, chờ bấm mở khóa
+        else { audio = null; playSynth(); }
+      });
       const max = (getCfg().musicMaxSeconds ?? 90) * 1000;
       stopTimer = setTimeout(() => stop(true), max);   // bài quá dài: cắt sau musicMaxSeconds (nhỏ dần)
       return file;
@@ -112,7 +138,7 @@
       clearTimeout(stopTimer);
       if (audio) { audio.pause(); audio = null; }
       if (master) { try { master.disconnect(); } catch { } master = null; }
-      if (playing) { playing = false; onEnd(); }
+      if (playing) { playing = false; setState('waiting'); onEnd(); }
     }
 
     function stop(fade = true) {
@@ -132,6 +158,9 @@
 
     return {
       get playing() { return playing; },
+      get state() { return state; },
+      onStateChange(fn) { onState = fn; },
+      setOff(off) { if (off) setState('off'); else if (state === 'off') setState('waiting'); },
       onEnd(fn) { onEnd = fn; },
       reload: loadFiles,
       /** Phát 1 bài. Trả về tên bài. */

@@ -147,7 +147,13 @@
     $('diagBridge').innerHTML = seen == null ? '❌ Chưa liên lạc lần nào'
       : `${b.connected ? '🟢' : '🔴'} ${mode === 'demo' ? '<b>DEMO (quà giả)</b>' : 'Live thật'} @${b.username || '?'}<br>${b.message || ''}<br><small>liên lạc ${ago(seen)}</small>`;
     $('diagCounts').innerHTML = `💬 Bình luận: <b>${c.chat || 0}</b> <small>(${ago(last.chat)})</small><br>🎁 Quà: <b>${c.gift || 0}</b> · 👋 Vào xem: <b>${c.join || 0}</b> · ❤️ Tim: <b>${c.like || 0}</b>`;
-    $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng`;
+    const mus = d.music || [];
+    const musText = !mus.length ? '🔇 không phát (không có trang sân khấu bật tiếng)'
+      : mus.includes('blocked') ? '<span style="color:#ffb3b3">⚠️ bị trình duyệt CHẶN → bấm vào cửa sổ sân khấu 1 lần</span>'
+      : mus.includes('playing') ? '🎵 <b>đang phát</b>'
+      : mus.every(m => m === 'off') ? '🔇 đang tắt (MusicEnabled = false)'
+      : '⏳ chờ tới lượt bài tiếp';
+    $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng<br>Nhạc: ${musText}`;
     $('diagRecent').innerHTML = (d.recent || []).map(e => `<li>${TYPE[e.type] || '•'} <b>${e.who}</b> ${e.text} <small>– ${ago(e.ago)}</small></li>`).join('') || '<li>(chưa có)</li>';
 
     // Kết luận: đứt ở mắt xích nào

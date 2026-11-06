@@ -53,4 +53,10 @@ public class WeddingHub : Hub
     {
         if (state.Length <= 40) _stages.SetState(Context.ConnectionId, state);
     }
+
+    /// <summary>Trang sân khấu báo trạng thái nhạc: waiting | playing | blocked | off.</summary>
+    public void ReportMusicState(string state)
+    {
+        if (state.Length <= 20) _stages.SetMusic(Context.ConnectionId, state);
+    }
 }
