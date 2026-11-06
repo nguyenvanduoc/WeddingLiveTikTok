@@ -202,6 +202,8 @@
   const showStage = (c) => {
     if (c.giftPacingMs !== undefined && document.activeElement !== $('pace')) { $('pace').value = c.giftPacingMs / 1000; $('paceVal').textContent = c.giftPacingMs / 1000 + ' giây'; }
     if (c.idleEverySeconds !== undefined && document.activeElement !== $('idleEvery')) { $('idleEvery').value = c.idleEverySeconds; $('idleVal').textContent = c.idleEverySeconds + ' giây'; }
+    if (c.musicEverySeconds !== undefined && document.activeElement !== $('musicEvery')) { $('musicEvery').value = c.musicEverySeconds; $('musicEveryVal').textContent = c.musicEverySeconds + ' giây'; }
+    if (c.musicVolume !== undefined && document.activeElement !== $('musicVol')) { $('musicVol').value = c.musicVolume; $('musicVolVal').textContent = Math.round(c.musicVolume * 100) + '%'; }
   };
   const reloadStageConfig = () => fetch('/api/config').then(r => r.json()).then(showStage).catch(() => { });
   async function saveStage(body, msg) {
@@ -215,6 +217,10 @@
   $('pace').addEventListener('change', () => saveStage({ giftPacingMs: Math.round($('pace').value * 1000) }, `🐢 Khách lên tặng cách nhau ${$('pace').value} giây`));
   $('idleEvery').addEventListener('input', () => { $('idleVal').textContent = $('idleEvery').value + ' giây'; });
   $('idleEvery').addEventListener('change', () => saveStage({ idleEverySeconds: +$('idleEvery').value }, `🎉 Khách mời tự hoạt động mỗi ${$('idleEvery').value} giây`));
+  $('musicEvery').addEventListener('input', () => { $('musicEveryVal').textContent = $('musicEvery').value + ' giây'; });
+  $('musicEvery').addEventListener('change', () => saveStage({ musicEverySeconds: +$('musicEvery').value }, `🎵 Hết bài thì ${$('musicEvery').value} giây sau phát bài tiếp`));
+  $('musicVol').addEventListener('input', () => { $('musicVolVal').textContent = Math.round($('musicVol').value * 100) + '%'; });
+  $('musicVol').addEventListener('change', () => saveStage({ musicVolume: +$('musicVol').value }, `🔉 Âm lượng nhạc ${Math.round($('musicVol').value * 100)}%`));
   reloadStageConfig();
 
   Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])

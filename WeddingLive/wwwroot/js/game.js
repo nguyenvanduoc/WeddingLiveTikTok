@@ -474,12 +474,13 @@
     // ---------------- Nhạc cưới: vắng quà thật musicEverySeconds giây thì phát 1 bài ----------------
     startMusicLoop() {
       this.lastRealGift = performance.now();
-      this.lastMusicEnd = performance.now();
+      this.lastMusicEnd = performance.now() - (cfg.musicEverySeconds ?? 30) * 1000 + 5000;   // bài đầu phát ~5s sau khi mở
       music.onEnd(() => { this.lastMusicEnd = performance.now(); this.musicNotes = false; });
       const tick = () => {
-        const every = (cfg.musicEverySeconds ?? 60) * 1000, now = performance.now();
-        if (MUSIC_ON() && !music.playing && !this.musicPending && !this.queue.length && !this.coupleBusy
-            && now - this.lastRealGift > every && now - this.lastMusicEnd > every) this.playMusic();
+        // Phát liên tục: hết bài thì musicEverySeconds giây sau phát bài tiếp (kể cả khi có quà; MC đọc thì nhạc nhỏ lại)
+        const every = (cfg.musicEverySeconds ?? 30) * 1000, now = performance.now();
+        const giftOk = !cfg.musicStopOnGift || now - this.lastRealGift > every;
+        if (MUSIC_ON() && !music.playing && !this.musicPending && giftOk && now - this.lastMusicEnd > every) this.playMusic();
         this.after(1000, tick);
       };
       tick();
@@ -488,10 +489,11 @@
     playMusic() {
       if (music.playing || this.musicPending || !MUSIC_ON()) return;
       this.musicPending = true;                        // chống gọi 2 lần trong lúc chờ nhạc vào
-      voice.musicLine();                               // MC giới thiệu, nhạc vào sau ~2,5s (MC nói thì nhạc tự nhỏ)
-      this.after(2500, () => {
+      const intro = (this.songCount = (this.songCount || 0) + 1) % 3 === 1;   // giới thiệu 1 lần mỗi 3 bài
+      if (intro) voice.musicLine();                    // MC giới thiệu, nhạc vào sau ~2,5s (MC nói thì nhạc tự nhỏ)
+      this.after(intro ? 2500 : 200, () => {
         this.musicPending = false;
-        if (music.playing || this.queue.length) { this.lastMusicEnd = performance.now(); return; }
+        if (music.playing) return;
         const name = music.play();
         if (!name) return;
         console.log('🎵 Phát nhạc:', name);
@@ -668,7 +670,7 @@
       this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       this.lastRealGift = performance.now();
-      if (music.playing) music.stop(true);           // có quà thật: nhạc nhỏ dần rồi tắt, ưu tiên người tặng
+      if (cfg.musicStopOnGift && music.playing) music.stop(true);   // mặc định: nhạc vẫn chạy, MC đọc quà thì nhạc nhỏ lại
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -974,7 +976,9 @@
       conn.on('StageConfigChanged', async () => {        // đổi nhịp quà ở admin => áp dụng ngay (bố cục giữ nguyên)
         try {
           const c = await (await fetch('/api/config')).json();
-          ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
+          ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
+           'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicMaxSeconds', 'musicStopOnGift'].forEach(k => { if (k in c) cfg[k] = c[k]; });
+          music.duck(false);                             // áp âm lượng mới ngay
         } catch { }
       });
       conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset

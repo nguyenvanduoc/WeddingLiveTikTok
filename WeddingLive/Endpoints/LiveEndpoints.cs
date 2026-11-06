@@ -32,7 +32,8 @@ public static class LiveEndpoints
             IdleAfterSeconds = Math.Clamp(o.CurrentValue.IdleAfterSeconds, 2, 600),
             IdleEverySeconds = Math.Clamp(o.CurrentValue.IdleEverySeconds, 2, 120),
             o.CurrentValue.MusicEnabled,
-            MusicEverySeconds = Math.Clamp(o.CurrentValue.MusicEverySeconds, 15, 3600),
+            MusicEverySeconds = Math.Clamp(o.CurrentValue.MusicEverySeconds, 5, 3600),
+            o.CurrentValue.MusicStopOnGift,
             MusicVolume = Math.Clamp(o.CurrentValue.MusicVolume, 0, 1),
             MusicMaxSeconds = Math.Clamp(o.CurrentValue.MusicMaxSeconds, 10, 600)
         }));

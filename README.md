@@ -125,11 +125,12 @@ Hết chỗ: người xem chưa tặng quà, lâu không hoạt động nhất n
 
 ## 🎵 Nhạc cưới khi vắng quà
 
-Không có quà thật `MusicEverySeconds` (60 giây) → MC giới thiệu rồi phát 1 bài, nốt nhạc bay quanh sân khấu.
+Nhạc phát **liên tục**: bài đầu ~5 giây sau khi mở sân khấu, hết bài thì `MusicEverySeconds` (30 giây) sau phát bài tiếp;
+MC giới thiệu 1 lần mỗi 3 bài, nốt nhạc bay quanh sân khấu. Thanh trượt trong admin: khoảng cách giữa 2 bài + âm lượng.
 - Chép file `.mp3/.ogg/.m4a/.wav` vào `WeddingLive/wwwroot/music/` để phát nhạc của bạn (xáo trộn, không lặp liền).
   Chỉ dùng bài bạn có quyền dùng — nhạc có bản quyền có thể khiến TikTok tắt tiếng / cảnh cáo live. File nhạc không được đưa lên git.
 - Không có file → tự chơi nhạc cưới cổ điển đã hết bản quyền (*Bridal Chorus* – Wagner, *Canon* – Pachelbel) bằng Web Audio.
-- MC nói → nhạc nhỏ lại; **có quà thật → nhạc nhỏ dần rồi tắt**; trong lúc nhạc, MC không tự nói câu dẫn.
+- **Có quà / bình luận vẫn đọc**: MC nói thì nhạc nhỏ lại, nói xong to lại (muốn tắt nhạc khi có quà: `"MusicStopOnGift": true`); trong lúc nhạc, MC không tự nói câu dẫn.
 - Admin: **▶️ Phát nhạc ngay / ⏹ Dừng nhạc**. Cấu hình `Wedding`: `MusicEnabled`, `MusicEverySeconds`, `MusicVolume` (0.35), `MusicMaxSeconds` (90).
 
 ## 🎁 Danh mục quà

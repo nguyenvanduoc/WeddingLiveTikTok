@@ -58,8 +58,10 @@ public class WeddingOptions
 
     /// <summary>Phát nhạc cưới khi vắng quà thật.</summary>
     public bool MusicEnabled { get; set; } = true;
-    /// <summary>Bao nhiêu giây không có quà thật (và kể từ bài trước) thì phát 1 bài.</summary>
-    public int MusicEverySeconds { get; set; } = 60;
+    /// <summary>Hết 1 bài thì sau chừng này giây phát bài tiếp (phát liên tục, kể cả khi có quà).</summary>
+    public int MusicEverySeconds { get; set; } = 30;
+    /// <summary>true = có quà thật thì tắt nhạc; false (mặc định) = nhạc vẫn chạy, MC đọc quà thì nhạc nhỏ lại.</summary>
+    public bool MusicStopOnGift { get; set; } = false;
     /// <summary>Âm lượng nhạc 0 - 1 (MC nói thì nhạc tự nhỏ lại).</summary>
     public double MusicVolume { get; set; } = 0.35;
     /// <summary>Bài (file) dài hơn thì nhỏ dần rồi dừng sau chừng này giây.</summary>
