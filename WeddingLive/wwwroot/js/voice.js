@@ -12,6 +12,8 @@
     let cfg = { enabled: false };
     const queue = [];            // { text, priority }  3 = admin, 2 = đọc tên người tặng quà, 1 = follow/cảm ơn, 0 = câu dẫn
     let playing = false, locked = false;
+    let current = null, stopCurrent = null;    // câu đang đọc + hàm ngắt nó (để quà/tin nhắn THẬT chen ngay)
+    const PRIORITY_REAL = 3.8;                 // quà / bình luận THẬT từ TikTok: đọc đầu tiên
     let lastSpoke = performance.now() - 1e9;     // mở trang là MC chào ngay
     let topGifter = '';                          // người tặng nhiều nhất (cho câu dẫn có {top1})
     let meter = null;                            // thanh tình yêu: { points, left, next }
@@ -54,8 +56,11 @@
         a.volume = cfg.volume ?? 1;
         a.preservesPitch = true;                 // đọc nhanh mà không bị the thé
         a.playbackRate = cfg.clientSpeed || 1;   // giọng Google Translate: tăng tốc khi phát
-        a.onended = () => resolve();
-        a.onerror = () => reject(new Error('audio-error'));
+        // Chống kẹt: nếu trình duyệt không báo "đã đọc xong" thì sau tối đa 25 giây vẫn đọc câu tiếp
+        const guard = setTimeout(() => { try { a.pause(); } catch { } resolve(); }, 25000);
+        stopCurrent = () => { clearTimeout(guard); try { a.pause(); } catch { } resolve(); };
+        a.onended = () => { clearTimeout(guard); resolve(); };
+        a.onerror = () => { clearTimeout(guard); reject(new Error('audio-error')); };
         a.play().then(onStart).catch(reject);   // NotAllowedError = trình duyệt chặn tự phát âm thanh
       });
     }
@@ -71,6 +76,7 @@
         u.rate = cfg.speed || 1;
         const done = () => { clearTimeout(timer); resolve(); };
         const timer = setTimeout(done, 20000);
+        stopCurrent = () => { speechSynthesis.cancel(); done(); };
         u.onend = done; u.onerror = done;
         speechSynthesis.speak(u);
       });
@@ -92,8 +98,18 @@
     const delay = (ms) => new Promise(r => setTimeout(r, ms));
     const silent = () => MUTED_BY_URL || !cfg.enabled;
 
+    // Độ ưu tiên thực tế: bình luận chờ > 4 giây được đọc TRƯỚC câu về quà (quà dồn dập không làm
+    // bình luận bị bỏ quên); lời chào người vào chờ > 12 giây cũng được đẩy lên.
+    function effective(q, now) {
+      const waited = now - (q.at || now);
+      if (q.real) return q.priority;                 // tin thật: luôn ở đầu hàng (theo thứ tự đến)
+      if (q.chat && waited > 4000) return 3.7;
+      if (q.join && waited > 12000) return 3.25;
+      return q.priority;
+    }
     function takeNext() {
-      queue.sort((a, b) => b.priority - a.priority);   // sort ổn định: cùng mức thì ai đến trước đọc trước
+      const now = performance.now();
+      queue.sort((a, b) => effective(b, now) - effective(a, now));   // sort ổn định: cùng mức thì ai đến trước đọc trước
       return queue.shift();
     }
 
@@ -102,6 +118,7 @@
       const item = takeNext();
       if (!item) return;
       playing = true;
+      current = item; stopCurrent = null;
       onSpeak(item.text);
       try {
         if (silent()) {
@@ -129,10 +146,15 @@
       if (!text) return;
       // Hàng đợi quá dài (quà dồn dập): bỏ câu ít quan trọng / cũ nhất
       if (queue.length >= 12) {
-        queue.sort((a, b) => b.priority - a.priority);
-        if (queue.at(-1).priority <= priority) queue.pop(); else return;
+        const now = performance.now();
+        queue.sort((a, b) => effective(b, now) - effective(a, now));
+        if (effective(queue.at(-1), now) <= priority) queue.pop(); else return;
       }
-      queue.push({ text, priority, ...extra });
+      queue.push({ text, priority, at: performance.now(), ...extra });
+      // Tin THẬT tới trong lúc MC đang nói câu tự động / câu DEMO => ngắt câu đó, đọc tin thật ngay
+      if (priority >= PRIORITY_REAL && playing && current && current.priority < 3 && stopCurrent) {
+        const stop = stopCurrent; stopCurrent = null; stop();
+      }
       pump();
     }
 
@@ -268,9 +290,10 @@
         recentChats.set(key, now);
         if (recentChats.size > 300) recentChats.clear();
         // Spam bình luận: chỉ giữ N bình luận mới nhất đang chờ đọc
-        const waiting = queue.filter(q => q.chat);
+        const waiting = queue.filter(q => q.chat && (e.demo || !q.real));   // bình luận thật không bị bỏ vì bình luận khác
         if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
-        enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }), PRIORITY_CHAT, { chat: true });
+        enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }),
+          e.demo ? 1.2 : PRIORITY_REAL, { chat: true, real: !e.demo });
         return 'queued';
       },
       /** Khách mời trong tiệc lên chúc mừng (chỉ khi MC rảnh, ưu tiên thấp hơn mọi thứ từ TikTok). */
@@ -303,12 +326,20 @@
       /** Khách bắt đầu lên sân khấu: đọc tên người tặng + quà gì (mỗi quà 1 câu). */
       announceGift(gift) {
         lastGiftAt = performance.now();
-        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), 3.5);
+        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), gift.demo ? 1.2 : PRIORITY_REAL, { real: !gift.demo });
       },
       /** Khách trao quà xong: quà lớn thì cảm ơn thêm; quà thường cảm ơn khi MC đang rảnh. */
       thankGift(gift, big) {
         if (big) enqueue(fill(pick(cfg.bigGiftThanks), giftData(gift)), 3.4);
         else if (!playing && !queue.length) enqueue(fill(pick(cfg.giftThanks), giftData(gift)), 1);
+      },
+      /** Quà dồn quá nhiều: cảm ơn gộp những người không kịp lên sân khấu. */
+      thankMany(names) {
+        const list = [...new Set(names.map(cleanName))];
+        if (!list.length) return;
+        const shown = list.slice(0, 4), more = list.length - shown.length;
+        const who = shown.join(', ') + (more > 0 ? ` và ${more} bạn khác` : '');
+        enqueue(`Cảm ơn ${who} đã gửi quà chúc mừng cô dâu chú rể!`, 3.4);
       },
       thankFollow(e) {
         if (cfg.thankFollow && queue.length < 6) enqueue(fill(pick(cfg.followThanks), { ...base(), name: cleanName(e.nickname) }), 2);

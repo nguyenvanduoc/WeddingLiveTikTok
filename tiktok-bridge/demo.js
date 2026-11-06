@@ -94,7 +94,7 @@ export function runDemo({ post, server, intervalMs = 20000 }) {
 
   function tick() {
     const user = randomName();
-    const base = { userId: slug(user), nickname: user };
+    const base = { userId: slug(user), nickname: user, demo: true };   // demo: true => server/sân khấu biết đây là quà giả
     const r = Math.random();
 
     if (r < 0.3) {                 // 30% quà (trước 55-65%)

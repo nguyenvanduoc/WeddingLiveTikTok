@@ -17,8 +17,14 @@ public class EventLog
     public DateTime? BridgeLastSeen { get; private set; }
     public string? BridgeMode { get; private set; }
 
-    public void Add(string type, string? who, string? text)
+    public void Add(string type, string? who, string? text, bool demo = false)
     {
+        if (demo)
+        {
+            _counts.AddOrUpdate("demo", 1, (_, n) => n + 1);   // sự kiện giả từ bridge DEMO
+            _last["demo"] = DateTime.Now;
+            text = "[DEMO] " + text;
+        }
         _counts.AddOrUpdate(type, 1, (_, n) => n + 1);
         _last[type] = DateTime.Now;
         _recent.Enqueue(new Entry(DateTime.Now, type, who ?? "", text ?? ""));

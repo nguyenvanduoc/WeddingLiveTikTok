@@ -54,7 +54,7 @@ public class GiftQueueService : BackgroundService
                 // Gửi kèm thanh tình yêu sau quà này + màn diễn (hug/dance) để sân khấu diễn đúng lúc trao quà
                 await _hub.Clients.All.SendAsync("GiftReceived", new
                 {
-                    gift.UserId, gift.Nickname, gift.AvatarUrl, gift.GiftName, gift.Count, gift.DiamondValue, gift.GiftImageUrl,
+                    gift.UserId, gift.Nickname, gift.AvatarUrl, gift.GiftName, gift.Count, gift.DiamondValue, gift.GiftImageUrl, gift.Demo,
                     Meter = meter,
                     Actions = actions
                 }, stoppingToken);

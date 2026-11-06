@@ -13,6 +13,8 @@ public record GiftEvent
     public int DiamondValue { get; init; }          // giá kim cương của 1 món quà
     public string? GiftImageUrl { get; init; }      // ảnh món quà trên máy chủ TikTok (để sân khấu hiện đúng hình quà)
     public long TotalDiamonds => (long)DiamondValue * Math.Max(1, Count);
+    /// <summary>true = quà giả do bridge chế độ DEMO tạo ra (không phải người thật trên TikTok).</summary>
+    public bool Demo { get; init; }
 }
 
 /// <summary>Bình luận trên live.</summary>
@@ -21,6 +23,7 @@ public record ChatEvent
     public string UserId { get; init; } = "";
     public string Nickname { get; init; } = "";
     public string Comment { get; init; } = "";
+    public bool Demo { get; init; }
 }
 
 /// <summary>Thả tim.</summary>
@@ -37,6 +40,7 @@ public record SocialEvent
     public string UserId { get; init; } = "";
     public string Nickname { get; init; } = "";
     public string Action { get; init; } = "follow"; // follow | share | join
+    public bool Demo { get; init; }
 }
 
 /// <summary>Một dòng trên bảng xếp hạng người tặng.</summary>

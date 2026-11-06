@@ -693,6 +693,8 @@
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       this.lastRealGift = performance.now();
       if (cfg.musicStopOnGift && music.playing) music.stop(true);   // mặc định: nhạc vẫn chạy, MC đọc quà thì nhạc nhỏ lại
+      // Quà THẬT: MC đọc NGAY khi quà tới (không đợi khách đi lên sân khấu)
+      if (!gift.demo) { voice.announceGift(gift); gift.announced = true; }
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -700,15 +702,46 @@
         if (gift.meter && (!same.meter || gift.meter.seq > same.meter.seq)) same.meter = gift.meter;
         same.actions = [...(same.actions || []), ...(gift.actions || [])];
       }
-      else if (isBig(gift)) this.queue.unshift(gift);      // quà lớn được ưu tiên
+      else if (gift.demo && this.queue.length >= 3) { this.stat('demoSkip'); return; }   // quà giả DEMO: không để dồn hàng
+      else if (isBig(gift)) this.queue.splice(this.queue.findIndex(q => !isBig(q) || q.demo) >>> 0, 0, gift);   // quà lớn lên trước
+      else if (!gift.demo) {                               // quà thật từ TikTok: xếp TRƯỚC mọi quà DEMO
+        const i = this.queue.findIndex(q => q.demo);
+        if (i < 0) this.queue.push(gift); else this.queue.splice(i, 0, gift);
+      }
       else this.queue.push(gift);
+      this.trimQueue();
       this.processQueue();
+    }
+
+    /**
+     * Hàng chờ quá dài (> MAX_QUEUE): bỏ bớt lượt đi lên của quà nhỏ cũ nhất, nhưng KHÔNG mất gì:
+     * thanh tình yêu / ôm hôn / khiêu vũ của quà đó chuyển sang quà kế tiếp, và MC cảm ơn gộp tên người tặng.
+     */
+    trimQueue() {
+      const MAX_QUEUE = 8;
+      const dropped = [];
+      while (this.queue.length > MAX_QUEUE) {
+        let i = this.queue.findIndex(q => q.demo);                     // bỏ quà DEMO trước
+        if (i < 0) i = this.queue.findIndex(q => !isBig(q));
+        if (i < 0) i = 0;
+        const [g] = this.queue.splice(i, 1);
+        const next = this.queue[Math.min(i, this.queue.length - 1)];
+        if (next) {
+          if (g.meter && (!next.meter || g.meter.seq > next.meter.seq)) next.meter = g.meter;
+          next.actions = [...(g.actions || []), ...(next.actions || [])];
+        } else if (g.meter) this.onMeter(g.meter);
+        if (!g.demo && !g.announced) dropped.push(g.nickname);
+        this.stat('merged');
+      }
+      if (dropped.length) voice.thankMany(dropped);
     }
 
     processQueue() {
       while (this.queue.length) {
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
-        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 5000) - performance.now();
+        // Hàng chờ dài => nhịp nhanh dần (tối thiểu 1.5 giây/khách) để quà thật không phải chờ lâu
+        const pacing = Math.max(Math.min(1500, cfg.giftPacingMs ?? 5000), (cfg.giftPacingMs ?? 5000) / (1 + Math.max(0, this.queue.length - 2) * 0.6));
+        const wait = (this.lastSend || 0) + (this.queue[0].demo ? pacing : 700) - performance.now();   // quà THẬT: đi ngay
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
@@ -720,6 +753,24 @@
         this.lastSend = performance.now();
       }
       this.queueText.setText(this.queue.length ? `⏳ Đang chờ lên sân khấu: ${this.queue.length}` : '');
+    }
+
+    /**
+     * Chống kẹt hàng quà: chỗ đứng tặng quà bận > 25 giây hoặc khách đi > 60 giây (do lỗi/khung hình
+     * bị dừng) thì tự giải phóng, đưa khách về ghế. Gọi 3 giây/lần.
+     */
+    watchdog() {
+      const now = performance.now();
+      for (const s of this.slots) if (s.busy && now - (s.busySince || now) > 25000) { s.busy = false; this.stat('unstuck'); }
+      for (const g of this.guests) {
+        if (!g.busy || now - (g.busySince || now) < 60000) continue;
+        this.tweens.killTweensOf(g.root);
+        g.root.setPosition(g.homeX, g.homeY).setScale(g.baseScale).setAngle(0);
+        try { stopWalk(g); setFacing(g, g.seatFacing); } catch { }
+        g.busy = false; g.npcTrip = false;
+        this.stat('unstuck');
+      }
+      this.processQueue();
     }
 
     // Ưu tiên khách đã mang tên người này; nếu không thì khách rảnh lâu nhất
@@ -736,6 +787,7 @@
 
     sendGuest(guest, slot, gift) {
       guest.busy = true; slot.busy = true;
+      guest.busySince = slot.busySince = performance.now();   // watchdog: kẹt quá lâu thì tự gỡ
       guest.npcTrip = !!gift.npc;
       if (gift.npc && gift.npcName) {
         guest.savedLabel = { text: guest.label.textObj.text, visible: guest.label.visible };
@@ -762,7 +814,7 @@
         guest.heldGift = this.makeGiftVisual(gift, 24, -50, 32, emoji);
         guest.puppet.add(guest.heldGift);
       } else guest.gift.setText(emoji);
-      if (!gift.npc) voice.announceGift(gift);     // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
+      if (!gift.npc && !gift.announced) voice.announceGift(gift);   // quà DEMO: MC đọc khi khách đi lên
 
       // Hàng đợi dài => đi nhanh hơn
       const speed = (cfg.walkSpeed || 240) * (1 + Math.min(this.queue.length, 8) * 0.05);   // quà dồn nhiều: nhanh thêm tối đa 40%
@@ -988,10 +1040,15 @@
         .configureLogging(signalR.LogLevel.Warning)
         .build();
 
-      conn.on('GiftReceived', g => this.onGift({ ...g }));
-      conn.on('ChatReceived', e => this.onChat(e));
-      conn.on('LikeReceived', e => this.onLike(e));
-      conn.on('SocialReceived', e => this.onSocial(e));
+      // Bọc try/catch: 1 sự kiện lỗi không làm hỏng các sự kiện sau; lỗi được báo về admin
+      const safe = (fn) => (arg) => {
+        try { fn(arg); }
+        catch (err) { console.error(err); this.stat('err'); (this.stats ||= {}).lastErr = String(err?.message || err).slice(0, 120); }
+      };
+      conn.on('GiftReceived', safe(g => this.onGift({ ...g })));
+      conn.on('ChatReceived', safe(e => this.onChat(e)));
+      conn.on('LikeReceived', safe(e => this.onLike(e)));
+      conn.on('SocialReceived', safe(e => this.onSocial(e)));
       conn.on('Leaderboard', l => this.onLeaderboard(l));
       conn.on('ResetStage', () => this.onReset());
       conn.on('Speak', e => voice.speakNow(e.text));
@@ -1023,6 +1080,7 @@
         conn.invoke('ReportStageStats', JSON.stringify(this.stats || {})).catch(() => { });
       };
       setInterval(() => reportStats(false), 2000);
+      setInterval(() => { try { this.watchdog(); } catch (err) { console.error(err); } }, 3000);
       music.setOff(!MUSIC_ON());
       music.onStateChange(reportMusic);
       conn.onreconnected(() => { report(); reportMusic(); reportStats(true); });

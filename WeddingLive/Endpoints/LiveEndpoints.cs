@@ -46,7 +46,7 @@ public static class LiveEndpoints
         api.MapPost("/gift", async (GiftEvent gift, GiftQueueService queue, EventLog log) =>
         {
             gift = Normalize(gift);
-            log.Add("gift", gift.Nickname, $"{gift.Count} x {gift.GiftName}");
+            log.Add("gift", gift.Nickname, $"{gift.Count} x {gift.GiftName}", gift.Demo);
             await queue.EnqueueAsync(gift);
             return Results.Accepted(value: new { queued = true, pending = queue.Pending });
         });
@@ -56,7 +56,7 @@ public static class LiveEndpoints
         {
             if (string.IsNullOrWhiteSpace(e.Comment)) return Results.BadRequest();
             e = e with { Nickname = Clean(e.Nickname, e.UserId), Comment = Truncate(e.Comment.Trim(), 80) };
-            log.Add("chat", e.Nickname, e.Comment);
+            log.Add("chat", e.Nickname, e.Comment, e.Demo);
             await hub.Clients.All.SendAsync("ChatReceived", e);
             return Results.Ok();
         });
@@ -72,7 +72,7 @@ public static class LiveEndpoints
         api.MapPost("/social", async (SocialEvent e, IHubContext<WeddingHub> hub, EventLog log) =>
         {
             e = e with { Nickname = Clean(e.Nickname, e.UserId) };
-            log.Add(e.Action, e.Nickname, e.Action == "join" ? "vào xem" : e.Action);
+            log.Add(e.Action, e.Nickname, e.Action == "join" ? "vào xem" : e.Action, e.Demo);
             await hub.Clients.All.SendAsync("SocialReceived", e);
             return Results.Ok();
         });
