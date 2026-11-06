@@ -117,6 +117,27 @@ MC mời gọi người xem (`Voice:IdleLines`).
 khách mời tự hoạt động mỗi 4–30 giây), áp dụng ngay không cần F5 (lưu vào `appsettings.Local.json`).
 Lâu không có quà (20 giây), MC xen kẽ câu dẫn với câu kêu gọi: *"Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!"* (`Voice:IdleLines`).
 
+## 👥 Người xem trên sân khấu
+
+Ai **vào phòng live** hoặc **bình luận** → 1 khách ở dưới mang **tên TikTok của người đó** (nhãn xanh dương);
+bình luận của họ hiện bong bóng trên đúng khách đó; họ tặng quà thì chính khách đó lên tặng (nhãn đen).
+Hết chỗ: người xem chưa tặng quà, lâu không hoạt động nhất nhường chỗ; người đã tặng quà giữ chỗ.
+
+## 🎵 Nhạc cưới khi vắng quà
+
+Không có quà thật `MusicEverySeconds` (60 giây) → MC giới thiệu rồi phát 1 bài, nốt nhạc bay quanh sân khấu.
+- Chép file `.mp3/.ogg/.m4a/.wav` vào `WeddingLive/wwwroot/music/` để phát nhạc của bạn (xáo trộn, không lặp liền).
+  Chỉ dùng bài bạn có quyền dùng — nhạc có bản quyền có thể khiến TikTok tắt tiếng / cảnh cáo live. File nhạc không được đưa lên git.
+- Không có file → tự chơi nhạc cưới cổ điển đã hết bản quyền (*Bridal Chorus* – Wagner, *Canon* – Pachelbel) bằng Web Audio.
+- MC nói → nhạc nhỏ lại; **có quà thật → nhạc nhỏ dần rồi tắt**; trong lúc nhạc, MC không tự nói câu dẫn.
+- Admin: **▶️ Phát nhạc ngay / ⏹ Dừng nhạc**. Cấu hình `Wedding`: `MusicEnabled`, `MusicEverySeconds`, `MusicVolume` (0.35), `MusicMaxSeconds` (90).
+
+## 🎁 Danh mục quà
+
+`WeddingLive/wwwroot/data/gifts.json`: ~100 quà (tên TikTok, kim cương, emoji, cách đọc tiếng Việt) dùng chung cho DEMO,
+sân khấu (emoji khi chưa có ảnh) và MC. DEMO chọn quà theo giá (rẻ hay gặp) và không lặp trong 30 lượt.
+Khách mời trong tiệc: hơn 200 tên vai, ~70 món quà truyền thống, không lặp gần nhau.
+
 ## 💞 Thanh tình yêu: ôm hôn & khiêu vũ
 
 Mỗi quà cộng điểm vào **thanh tình yêu** dưới tên cô dâu chú rể (1 kim cương = 1 điểm, Rose = 1 điểm):

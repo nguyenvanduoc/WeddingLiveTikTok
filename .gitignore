@@ -489,3 +489,9 @@ tiktok-bridge/.env
 
 # Cài đặt riêng từng máy (tốc độ giọng chỉnh từ admin...)
 WeddingLive/appsettings.Local.json
+
+# Nhạc riêng của từng máy (tránh đưa nhạc có bản quyền lên repo public)
+WeddingLive/wwwroot/music/*.mp3
+WeddingLive/wwwroot/music/*.ogg
+WeddingLive/wwwroot/music/*.m4a
+WeddingLive/wwwroot/music/*.wav

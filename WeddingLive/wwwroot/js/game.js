@@ -24,20 +24,46 @@
     [/sunglass/i, '🕶️'], [/coffee/i, '☕'], [/money|gun/i, '💸'], [/confetti/i, '🎊'],
     [/swan/i, '🦢'], [/corgi|dog/i, '🐶'], [/butterfly/i, '🦋'], [/star/i, '⭐'], [/gg/i, '🎮'], [/rainbow/i, '🌈'], [/kiss/i, '💋']
   ];
-  const giftEmoji = (name) => (GIFT_EMOJI.find(([re]) => re.test(name)) || [, '🎁'])[1];
+  // Danh mục ~100 quà (data/gifts.json): emoji + cách đọc tiếng Việt, dùng chung với DEMO và MC
+  let GIFT_CATALOG = {};
+  try {
+    (await (await fetch('/data/gifts.json')).json()).forEach(g => { GIFT_CATALOG[g.name.toLowerCase()] = g; });
+  } catch { }
+  window.__giftCatalog = GIFT_CATALOG;
+  const giftEmoji = (name) => GIFT_CATALOG[(name || '').toLowerCase()]?.emoji
+    || (GIFT_EMOJI.find(([re]) => re.test(name)) || [, '🎁'])[1];
   const isBig = (g) => (g.diamondValue * g.count) >= cfg.bigGiftDiamonds;
 
   // Khách mời trong tiệc (khi sân khấu vắng): tên VAI + quà truyền thống. Không dùng tên giống tài khoản TikTok
   // để người xem không nhầm là có người thật vừa tặng quà.
-  const NPC_ROLES = ['Bác Tư', 'Cô Hoa', 'Chú Ba', 'Dì Năm', 'Ông Sáu', 'Bà Bảy', 'Cậu Út', 'Mợ Hai', 'Anh Hùng hàng xóm',
-    'Chị Mai họ hàng', 'Bạn thân cô dâu', 'Bạn thân chú rể', 'Đồng nghiệp cô dâu', 'Đồng nghiệp chú rể', 'Sếp chú rể',
-    'Cô giáo cũ', 'Hội bạn đại học', 'Em họ cô dâu', 'Anh trai chú rể', 'Chị gái cô dâu', 'Bé Bi', 'Bé Na', 'Thím Ba', 'Dượng Tư'];
+  const NPC_ROLES = (() => {
+    const rel = ['Cô', 'Chú', 'Dì', 'Bác', 'Cậu', 'Mợ', 'Thím', 'Dượng', 'Anh', 'Chị', 'Ông', 'Bà'];
+    const ten = ['Hoa', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Lan', 'Hùng', 'Mai', 'Tâm', 'Phúc', 'Lộc', 'Thọ', 'Hạnh', 'Nga', 'Dũng', 'Hằng', 'Minh'];
+    const groups = ['Bạn thân cô dâu', 'Bạn thân chú rể', 'Đồng nghiệp cô dâu', 'Đồng nghiệp chú rể', 'Sếp chú rể', 'Cô giáo cũ',
+      'Hội bạn đại học', 'Hội bạn cấp 3', 'Em họ cô dâu', 'Anh trai chú rể', 'Chị gái cô dâu', 'Bé Bi', 'Bé Na', 'Hàng xóm cô dâu',
+      'Đội bóng của chú rể', 'Nhóm nhảy của cô dâu', 'Họ hàng bên nội', 'Họ hàng bên ngoại', 'Bạn cùng phòng ký túc', 'Thầy chủ nhiệm'];
+    return [...rel.flatMap(r => ten.map(t => `${r} ${t}`)), ...groups];
+  })();
   const NPC_OFFERS = [['🧧', 'phong bì'], ['💐', 'bó hoa'], ['🎁', 'hộp quà'], ['🍾', 'chai rượu'], ['🎂', 'bánh cưới'],
-    ['🧸', 'gấu bông'], ['🥂', 'ly rượu'], ['🌹', 'hoa hồng'], ['💝', 'hộp quà trái tim'], ['🍰', 'bánh kem'], ['🖼️', 'khung ảnh cưới'], ['🏮', 'đèn lồng']];
+    ['🧸', 'gấu bông'], ['🥂', 'ly rượu'], ['🌹', 'hoa hồng'], ['💝', 'hộp quà trái tim'], ['🍰', 'bánh kem'], ['🖼️', 'khung ảnh cưới'],
+    ['🏮', 'đèn lồng'], ['💍', 'cặp nhẫn'], ['⌚', 'đồng hồ đôi'], ['🫖', 'bộ ấm trà'], ['🍵', 'hộp trà quý'], ['🍷', 'chai vang đỏ'],
+    ['🧺', 'giỏ trái cây'], ['🍊', 'giỏ cam'], ['🍎', 'giỏ táo đỏ'], ['🍇', 'chùm nho'], ['🥭', 'thùng xoài'], ['🍯', 'hũ mật ong'],
+    ['🍪', 'hộp bánh quy'], ['🍫', 'hộp sô cô la'], ['🥮', 'hộp bánh pía'], ['🍬', 'hộp kẹo'], ['🧁', 'hộp bánh cupcake'],
+    ['🌷', 'bó tulip'], ['🌻', 'bó hướng dương'], ['🌸', 'cành hoa đào'], ['🪴', 'chậu cây cảnh'], ['🎋', 'cây tre may mắn'],
+    ['🕯️', 'cặp nến thơm'], ['🛏️', 'bộ chăn ga'], ['🛋️', 'bộ gối tựa'], ['🍽️', 'bộ chén đĩa'], ['🥢', 'bộ đũa ngà'],
+    ['🔪', 'bộ dao nhà bếp'], ['☕', 'máy pha cà phê'], ['📺', 'cái ti vi'], ['🧊', 'cái tủ lạnh'], ['🌀', 'cái quạt'],
+    ['💡', 'bộ đèn trang trí'], ['🖋️', 'cây bút ký'], ['📚', 'bộ sách nấu ăn'], ['🎨', 'bức tranh'], ['🪞', 'cái gương'],
+    ['👘', 'bộ áo dài'], ['👔', 'cà vạt'], ['👗', 'chiếc váy'], ['👠', 'đôi giày'], ['👜', 'túi xách'], ['💄', 'bộ mỹ phẩm'],
+    ['💎', 'món trang sức'], ['📿', 'chuỗi ngọc'], ['🪙', 'đồng vàng'], ['💵', 'phong bì dày'], ['🏠', 'mô hình nhà'],
+    ['🚗', 'mô hình xe hơi'], ['🛵', 'chìa khóa xe'], ['✈️', 'vé du lịch'], ['🏝️', 'tour trăng mật'], ['🎫', 'vé xem phim'],
+    ['🎹', 'cây đàn'], ['🎵', 'bài hát tặng'], ['📸', 'bộ ảnh cưới'], ['🐟', 'cặp cá cảnh'], ['🐦', 'đôi chim uyên ương']];
 
   // MC ảo (giọng đọc)
   const voice = window.WeddingVoice.create(cfg);
   await voice.load();
+  // Nhạc cưới khi vắng quà thật (trang tắt tiếng ?voice=0 thì không phát)
+  const music = window.WeddingMusic.create(() => cfg);
+  const MUSIC_ON = () => cfg.musicEnabled !== false && !voice.muted;
 
   // Bàn tiệc tròn. Vị trí xếp theo thứ tự ưu tiên; s = tỉ lệ thu nhỏ (bàn xa sân khấu hơn thì to hơn).
   const TABLE_SPOTS = [
@@ -80,7 +106,8 @@
       this.connectSignalR();
       this.startIdleLoop();
       // MC không đọc lời giới thiệu khi đang có khách lên tặng quà
-      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy && !g.npcTrip));   // khách mời tự lên không chặn MC
+      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy && !g.npcTrip) || music.playing);   // đang phát nhạc: MC không tự nói câu dẫn
+      this.startMusicLoop();
     }
 
     // ---------------- Texture dùng cho hiệu ứng hạt ----------------
@@ -181,6 +208,7 @@
     }
 
     mcSpeak(text) {
+      music.duck(true);                                // MC nói: nhạc nhỏ lại
       const w = 300;
       this.subText.setText((voice.silent ? '🔇 (khung này tắt tiếng) ' : '🎤 ') + text);
       const h = this.subText.height + 20;
@@ -202,6 +230,7 @@
     }
 
     mcSilent() {
+      music.duck(false);
       this.mcTalk.forEach(t => t.stop());
       this.mcTalk = [];
       this.mc.mouth.setVisible(false);
@@ -417,8 +446,8 @@
       if (!idle.length) return;
       const guest = Phaser.Utils.Array.GetRandom(idle);
       // Tên VAI trong tiệc (không giống tài khoản TikTok) + quà mỗi lần một khác, không lặp gần nhau
-      const name = this.pickFresh('npcNames', NPC_ROLES, 10);
-      const [emoji, offer] = this.pickFresh('npcOffers', NPC_OFFERS, 4);
+      const name = this.pickFresh('npcNames', NPC_ROLES, 60);       // không lặp tên trong 60 lượt
+      const [emoji, offer] = this.pickFresh('npcOffers', NPC_OFFERS, 30);   // không lặp quà trong 30 lượt
       this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji, npcName: name });
       if (Math.random() < 0.5) voice.npcVisit(name, offer);   // "Bác Tư lên trao phong bì mừng cô dâu chú rể!"
       else if (Math.random() < 0.5) voice.idleLine();         // hoặc mời gọi người xem trên live
@@ -440,6 +469,44 @@
       const wishes = ['Chúc mừng hạnh phúc! 🥰', 'Trăm năm hạnh phúc nha!', 'Đẹp đôi quá trời 😍', 'Nâng ly nào! 🥂',
         'Sớm có em bé nhé 👶', 'Cô dâu xinh quá!', 'Chú rể bảnh ghê 😎', 'Yêu nhau mãi mãi nha ❤️', 'Dzô dzô dzô! 🍻', 'Hạnh phúc quá đi!'];
       this.showBubble(Phaser.Utils.Array.GetRandom(idle), Phaser.Utils.Array.GetRandom(wishes));
+    }
+
+    // ---------------- Nhạc cưới: vắng quà thật musicEverySeconds giây thì phát 1 bài ----------------
+    startMusicLoop() {
+      this.lastRealGift = performance.now();
+      this.lastMusicEnd = performance.now();
+      music.onEnd(() => { this.lastMusicEnd = performance.now(); this.musicNotes = false; });
+      const tick = () => {
+        const every = (cfg.musicEverySeconds ?? 60) * 1000, now = performance.now();
+        if (MUSIC_ON() && !music.playing && !this.musicPending && !this.queue.length && !this.coupleBusy
+            && now - this.lastRealGift > every && now - this.lastMusicEnd > every) this.playMusic();
+        this.after(1000, tick);
+      };
+      tick();
+    }
+
+    playMusic() {
+      if (music.playing || this.musicPending || !MUSIC_ON()) return;
+      this.musicPending = true;                        // chống gọi 2 lần trong lúc chờ nhạc vào
+      voice.musicLine();                               // MC giới thiệu, nhạc vào sau ~2,5s (MC nói thì nhạc tự nhỏ)
+      this.after(2500, () => {
+        this.musicPending = false;
+        if (music.playing || this.queue.length) { this.lastMusicEnd = performance.now(); return; }
+        const name = music.play();
+        if (!name) return;
+        console.log('🎵 Phát nhạc:', name);
+        // Nốt nhạc bay quanh sân khấu khi đang có nhạc
+        this.musicNotes = true;
+        const spawn = () => {
+          if (!this.musicNotes) return;
+          const t = this.add.text(CENTER_X + Phaser.Math.Between(-260, 260), 330 - Phaser.Math.Between(0, 160),
+            Phaser.Utils.Array.GetRandom(['🎵', '🎶', '🎼']), { fontFamily: FONT, fontSize: Phaser.Math.Between(16, 26) + 'px' })
+            .setOrigin(0.5).setDepth(955).setAlpha(0.85);
+          this.tweens.add({ targets: t, y: t.y - 70, alpha: 0, duration: 2200, onComplete: () => t.destroy() });
+          this.after(700, spawn);
+        };
+        spawn();
+      });
     }
 
     // ---------------- Cô dâu chú rể: ôm hôn / khiêu vũ ----------------
@@ -600,6 +667,8 @@
     onGift(gift) {
       this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
+      this.lastRealGift = performance.now();
+      if (music.playing) music.stop(true);           // có quà thật: nhạc nhỏ dần rồi tắt, ưu tiên người tặng
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -635,8 +704,10 @@
       if (!idle.length) return null;
       const same = idle.find(g => g.userId && g.userId === userId);
       if (same) return same;
-      const oldest = Math.min(...idle.map(g => g.lastUsed));
-      return Phaser.Utils.Array.GetRandom(idle.filter(g => g.lastUsed === oldest));
+      // Tránh lấy chỗ của người xem đang có mặt: ưu tiên khách chưa mang tên ai
+      const pool = idle.filter(g => !g.userId).length ? idle.filter(g => !g.userId) : idle.filter(g => !g.viewer || !g.gifted).length ? idle.filter(g => !g.viewer || !g.gifted) : idle;
+      const oldest = Math.min(...pool.map(g => g.lastUsed));
+      return Phaser.Utils.Array.GetRandom(pool.filter(g => g.lastUsed === oldest));
     }
 
     sendGuest(guest, slot, gift) {
@@ -650,6 +721,8 @@
       }
       if (!gift.npc) {                               // quà thật: khách nhận tên người tặng
         guest.userId = gift.userId;
+        guest.viewer = true; guest.gifted = true;    // người đã tặng quà luôn giữ chỗ
+        guest.label.setBg(0x000000, 0.55);           // nhãn đen = người tặng quà
         guest.lastUsed = performance.now();
         const max = guest.compact ? 12 : 24;
         guest.label.setText(gift.nickname.length > max ? gift.nickname.slice(0, max) + '…' : gift.nickname);
@@ -796,11 +869,33 @@
     onChat(e) {
       if (voice.isBlocked(e)) return;                // có từ cấm: không đọc, không hiện bong bóng
       voice.readChat(e);                             // MC ưu tiên đọc bình luận
-      // Khách đang mang tên người đó sẽ nói; nếu chưa có thì 1 khách rảnh bất kỳ nói hộ
       this.lastReal = performance.now();
-      const g = this.guests.find(x => x.userId === e.userId) ||
+      // Người xem bình luận: khách mang tên TikTok của họ nói (chưa có thì gán tên cho 1 khách)
+      const g = this.assignViewer(e) ||
                 Phaser.Utils.Array.GetRandom(this.guests.filter(x => !x.busy)) || this.guests[0];
       this.showBubble(g, g.userId === e.userId ? e.comment : `${e.nickname}: ${e.comment}`);
+    }
+
+    /**
+     * Người xem (vào phòng / bình luận) => 1 khách ở dưới mang tên TikTok của họ (nhãn xanh dương).
+     * Hết chỗ: người xem chưa tặng quà, lâu không hoạt động nhất nhường chỗ. Người đã tặng quà giữ chỗ.
+     */
+    assignViewer(e) {
+      if (!e?.userId && !e?.nickname) return null;
+      const id = e.userId || e.nickname, now = performance.now();
+      let g = this.guests.find(x => x.userId === id);
+      if (g) { g.lastSeen = now; return g; }
+      const free = this.guests.filter(x => !x.busy && !x.userId);
+      g = free.length ? Phaser.Utils.Array.GetRandom(free)
+        : this.guests.filter(x => !x.busy && x.viewer && !x.gifted).sort((a, b) => a.lastSeen - b.lastSeen)[0];
+      if (!g) return null;
+      g.userId = id; g.viewer = true; g.gifted = false; g.lastSeen = now;
+      const max = g.compact ? 12 : 20, name = e.nickname || id;
+      g.label.setBg(0x1d4e89, 0.85);                 // xanh dương = người xem đang ở trong live
+      g.label.setText(name.length > max ? name.slice(0, max) + '…' : name);
+      g.label.setVisible(true);
+      this.tweens.add({ targets: g, labelPop: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.out' });
+      return g;
     }
 
     /** Bong bóng chat trên đầu 1 khách (4 giây). */
@@ -827,7 +922,7 @@
     onSocial(e) {
       this.lastReal = performance.now();
       if (e.action === 'follow') voice.thankFollow(e);
-      if (e.action === 'join') voice.greetJoin(e);   // "Hello Thảo Vy!"
+      if (e.action === 'join') { voice.greetJoin(e); this.assignViewer(e); }   // "Hello Thảo Vy!" + khách mang tên người xem
       const icon = { follow: '⭐ vừa theo dõi', share: '🔁 vừa chia sẻ live', join: '👋 vừa vào phòng' }[e.action] || e.action;
       const t = makeLabel(this, `${e.nickname} ${icon}`, { fontSize: '15px', bg: 0x2b2d42, bgAlpha: 0.8 })
         .setDepth(980).setPosition(W + 200, 0);
@@ -851,7 +946,10 @@
 
     onReset() {
       this.queue = [];
-      this.guests.forEach((g, i) => { g.userId = null; g.label.setText('Khách ' + (i + 1)); g.label.setVisible(!g.hideLabel); });
+      this.guests.forEach((g, i) => {
+        g.userId = null; g.viewer = false; g.gifted = false;
+        g.label.setBg(0x000000, 0.55); g.label.setText('Khách ' + (i + 1)); g.label.setVisible(!g.hideLabel);
+      });
       this.processQueue();
     }
 
@@ -881,6 +979,7 @@
       });
       conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset
       conn.on('CoupleAction', a => this.queueCouple(a.action));   // admin bấm thử
+      conn.on('Music', m => { if (m.action === 'stop') music.stop(true); else { music.reload(); this.playMusic(); } });
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 
       // Báo trạng thái giọng về server (trang admin hiển thị để chẩn đoán)

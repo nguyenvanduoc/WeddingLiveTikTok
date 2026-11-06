@@ -78,6 +78,8 @@ public class VoiceOptions
     public List<string>? IdleLines { get; set; }
     /// <summary>MC đọc khi khách mời trong tiệc lên chúc mừng. Biến: {name} (tên vai) {offer} (quà).</summary>
     public List<string>? NpcLines { get; set; }
+    /// <summary>MC giới thiệu trước khi phát nhạc cưới.</summary>
+    public List<string>? MusicLines { get; set; }
 
     /// <summary>Tên quà TikTok (tiếng Anh) -> cách đọc tiếng Việt.</summary>
     public Dictionary<string, string>? GiftNames { get; set; }
@@ -174,6 +176,13 @@ public class VoiceOptions
     };
 
     public static readonly string[] DefaultJoinGreetings = { "Hello {names}!", "Chào {names}!", "Hello {names}, vào chung vui nha!", "Chào mừng {names}!" };
+
+    public static readonly string[] DefaultMusicLines =
+    {
+        "Xin mời quý vị cùng thưởng thức một bản nhạc cưới thật lãng mạn!",
+        "Âm nhạc lên nào! Chúc cho {bride} và {groom} trăm năm hạnh phúc!",
+        "Cùng lắng nghe giai điệu tình yêu dành tặng cô dâu chú rể nhé!"
+    };
 
     public static readonly string[] DefaultChatTemplates = { "{name} nói: {comment}", "{name} gửi lời chúc: {comment}", "Bạn {name} bình luận: {comment}" };
 

@@ -5,6 +5,10 @@
 //  Bật khi: TIKTOK_USERNAME để trống / còn là "ten_tiktok_cua_ban", hoặc DEMO=true
 // =====================================================================
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 // ---- Tên người tặng: ghép ngẫu nhiên => hàng trăm tên khác nhau, không lặp trong 20 lượt gần nhất ----
 const GIVEN = ['Lan Phương', 'Tuấn Anh', 'Mai Chi', 'Quốc Bảo', 'Thu Trang', 'Đức Huy', 'Ngọc Hân', 'Minh Khang',
   'Bảo Ngọc', 'Gia Hưng', 'Khánh Linh', 'Văn Toàn', 'Thảo Vy', 'Hải Đăng', 'Phương Anh', 'Hoàng Nam', 'Thanh Tâm',
@@ -42,6 +46,19 @@ const GIFTS = [
 ];
 const COUNTABLE = ['Rose', 'Heart Me', 'TikTok', 'Ice Cream Cone', 'GG', 'Love you', 'Cake Slice', 'Finger Heart'];
 
+// Danh mục ~100 quà dùng chung với sân khấu + MC (WeddingLive/wwwroot/data/gifts.json).
+// Trọng số = 10 / căn(kim cương): quà rẻ hay gặp, quà đắt hiếm. Không có file thì dùng GIFTS ở trên.
+try {
+  const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'WeddingLive', 'wwwroot', 'data', 'gifts.json');
+  const catalog = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (catalog.length) {
+    GIFTS.length = 0;
+    catalog.forEach(g => GIFTS.push([g.name, g.diamonds, 10 / Math.sqrt(g.diamonds)]));
+    COUNTABLE.length = 0;
+    catalog.filter(g => g.diamonds <= 10).forEach(g => COUNTABLE.push(g.name));
+  }
+} catch { /* giữ danh sách mặc định */ }
+
 const COMMENTS = ['Chúc mừng hạnh phúc! 🥰', 'Cô dâu xinh quá 😍', 'Trăm năm hạnh phúc nha', 'Chú rể đẹp trai ghê',
   'Sớm có em bé nha 👶', 'Đẹp đôi quá trời', 'Hạnh phúc mãi mãi nhé ❤️', 'Chúc hai bạn bên nhau trọn đời'];
 
@@ -51,18 +68,15 @@ const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, '
 
 const recentGifts = [];
 function weightedGift() {
-  const total = GIFTS.reduce((t, g) => t + g[2], 0);
-  for (let i = 0; i < 10; i++) {
-    let r = Math.random() * total, pick = GIFTS[0];
-    for (const g of GIFTS) { if ((r -= g[2]) <= 0) { pick = g; break; } }
-    // không ra 1 món quá 2 lần liên tiếp
-    if (!(recentGifts.length >= 2 && recentGifts.slice(-2).every(n => n === pick[0]))) {
-      recentGifts.push(pick[0]);
-      if (recentGifts.length > 5) recentGifts.shift();
-      return pick;
-    }
-  }
-  return GIFTS[between(0, 9)];
+  // Chỉ chọn trong các quà chưa ra ở 30 lượt gần nhất => ~100 loại xoay vòng, hạn chế trùng
+  const pool = GIFTS.filter(g => !recentGifts.includes(g[0]));
+  const list = pool.length ? pool : GIFTS;
+  const total = list.reduce((t, g) => t + g[2], 0);
+  let r = Math.random() * total, pick = list[0];
+  for (const g of list) { if ((r -= g[2]) <= 0) { pick = g; break; } }
+  recentGifts.push(pick[0]);
+  if (recentGifts.length > Math.min(30, GIFTS.length - 1)) recentGifts.shift();
+  return pick;
 }
 
 export function runDemo({ post, server, intervalMs = 20000 }) {

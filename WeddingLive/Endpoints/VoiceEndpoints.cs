@@ -55,6 +55,7 @@ public static class VoiceEndpoints
                 DanceLines = Or(o.DanceLines, VoiceOptions.DefaultDanceLines),
                 IdleLines = Or(o.IdleLines, VoiceOptions.DefaultIdleLines),
                 NpcLines = Or(o.NpcLines, VoiceOptions.DefaultNpcLines),
+                MusicLines = Or(o.MusicLines, VoiceOptions.DefaultMusicLines),
                 GiftNames = giftNames
             });
         });

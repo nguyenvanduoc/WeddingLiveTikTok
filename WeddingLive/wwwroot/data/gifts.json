@@ -1,0 +1,602 @@
+[
+{
+"name": "Rose",
+"diamonds": 1,
+"emoji": "🌹",
+"vi": "bông hồng"
+},
+{
+"name": "TikTok",
+"diamonds": 1,
+"emoji": "🎵",
+"vi": "logo TikTok"
+},
+{
+"name": "GG",
+"diamonds": 1,
+"emoji": "🎮",
+"vi": "GG"
+},
+{
+"name": "Ice Cream Cone",
+"diamonds": 1,
+"emoji": "🍦",
+"vi": "cây kem"
+},
+{
+"name": "Heart Me",
+"diamonds": 1,
+"emoji": "💗",
+"vi": "trái tim"
+},
+{
+"name": "Love you",
+"diamonds": 1,
+"emoji": "💌",
+"vi": "lời yêu thương"
+},
+{
+"name": "Cake Slice",
+"diamonds": 1,
+"emoji": "🍰",
+"vi": "miếng bánh kem"
+},
+{
+"name": "Glow Stick",
+"diamonds": 1,
+"emoji": "🪄",
+"vi": "que phát sáng"
+},
+{
+"name": "Thumbs Up",
+"diamonds": 1,
+"emoji": "👍",
+"vi": "lượt thích"
+},
+{
+"name": "Heart",
+"diamonds": 1,
+"emoji": "❤️",
+"vi": "trái tim đỏ"
+},
+{
+"name": "Wink Wink",
+"diamonds": 1,
+"emoji": "😉",
+"vi": "cái nháy mắt"
+},
+{
+"name": "Coffee",
+"diamonds": 1,
+"emoji": "☕",
+"vi": "ly cà phê"
+},
+{
+"name": "Mini Speaker",
+"diamonds": 1,
+"emoji": "🔊",
+"vi": "loa mini"
+},
+{
+"name": "Hi Bear",
+"diamonds": 1,
+"emoji": "🐻",
+"vi": "chú gấu chào"
+},
+{
+"name": "Little Crown",
+"diamonds": 1,
+"emoji": "👑",
+"vi": "vương miện nhỏ"
+},
+{
+"name": "Finger Heart",
+"diamonds": 5,
+"emoji": "🫰",
+"vi": "trái tim ngón tay"
+},
+{
+"name": "Hand Wave",
+"diamonds": 9,
+"emoji": "👋",
+"vi": "cái vẫy tay"
+},
+{
+"name": "Friendship Necklace",
+"diamonds": 10,
+"emoji": "📿",
+"vi": "vòng cổ tình bạn"
+},
+{
+"name": "Rosa",
+"diamonds": 10,
+"emoji": "🌺",
+"vi": "hoa Rosa"
+},
+{
+"name": "Tiny Diny",
+"diamonds": 10,
+"emoji": "🦕",
+"vi": "khủng long tí hon"
+},
+{
+"name": "Lollipop",
+"diamonds": 10,
+"emoji": "🍭",
+"vi": "cây kẹo mút"
+},
+{
+"name": "Chocolate",
+"diamonds": 10,
+"emoji": "🍫",
+"vi": "thanh sô cô la"
+},
+{
+"name": "Kiss",
+"diamonds": 10,
+"emoji": "💋",
+"vi": "nụ hôn"
+},
+{
+"name": "Strawberry",
+"diamonds": 10,
+"emoji": "🍓",
+"vi": "quả dâu tây"
+},
+{
+"name": "Lucky Clover",
+"diamonds": 10,
+"emoji": "🍀",
+"vi": "cỏ bốn lá"
+},
+{
+"name": "Perfume",
+"diamonds": 20,
+"emoji": "🌸",
+"vi": "chai nước hoa"
+},
+{
+"name": "Love Bang",
+"diamonds": 25,
+"emoji": "💥",
+"vi": "tình yêu bùng nổ"
+},
+{
+"name": "Doughnut",
+"diamonds": 30,
+"emoji": "🍩",
+"vi": "bánh donut"
+},
+{
+"name": "Milk Tea",
+"diamonds": 30,
+"emoji": "🧋",
+"vi": "ly trà sữa"
+},
+{
+"name": "Popcorn",
+"diamonds": 30,
+"emoji": "🍿",
+"vi": "bắp rang bơ"
+},
+{
+"name": "Pizza",
+"diamonds": 40,
+"emoji": "🍕",
+"vi": "bánh pizza"
+},
+{
+"name": "Hamburger",
+"diamonds": 40,
+"emoji": "🍔",
+"vi": "bánh hamburger"
+},
+{
+"name": "Watermelon",
+"diamonds": 40,
+"emoji": "🍉",
+"vi": "quả dưa hấu"
+},
+{
+"name": "Tulip",
+"diamonds": 50,
+"emoji": "🌷",
+"vi": "hoa tulip"
+},
+{
+"name": "Sunflower",
+"diamonds": 50,
+"emoji": "🌻",
+"vi": "hoa hướng dương"
+},
+{
+"name": "Cherry Blossom",
+"diamonds": 60,
+"emoji": "🌸",
+"vi": "hoa anh đào"
+},
+{
+"name": "Music Note",
+"diamonds": 60,
+"emoji": "🎶",
+"vi": "nốt nhạc"
+},
+{
+"name": "Balloon",
+"diamonds": 70,
+"emoji": "🎈",
+"vi": "bong bóng"
+},
+{
+"name": "Butterfly",
+"diamonds": 88,
+"emoji": "🦋",
+"vi": "bươm bướm"
+},
+{
+"name": "Paper Crane",
+"diamonds": 99,
+"emoji": "🕊️",
+"vi": "hạc giấy"
+},
+{
+"name": "Star",
+"diamonds": 99,
+"emoji": "⭐",
+"vi": "ngôi sao"
+},
+{
+"name": "Hand Hearts",
+"diamonds": 100,
+"emoji": "🫶",
+"vi": "trái tim bàn tay"
+},
+{
+"name": "Confetti",
+"diamonds": 100,
+"emoji": "🎊",
+"vi": "pháo giấy"
+},
+{
+"name": "Bouquet",
+"diamonds": 100,
+"emoji": "💐",
+"vi": "bó hoa"
+},
+{
+"name": "Bunny",
+"diamonds": 100,
+"emoji": "🐰",
+"vi": "chú thỏ con"
+},
+{
+"name": "Cat",
+"diamonds": 100,
+"emoji": "🐱",
+"vi": "chú mèo con"
+},
+{
+"name": "Penguin",
+"diamonds": 120,
+"emoji": "🐧",
+"vi": "chim cánh cụt"
+},
+{
+"name": "Koala",
+"diamonds": 120,
+"emoji": "🐨",
+"vi": "gấu koala"
+},
+{
+"name": "Panda",
+"diamonds": 150,
+"emoji": "🐼",
+"vi": "gấu trúc"
+},
+{
+"name": "Microphone",
+"diamonds": 150,
+"emoji": "🎤",
+"vi": "micro"
+},
+{
+"name": "Headphones",
+"diamonds": 150,
+"emoji": "🎧",
+"vi": "tai nghe"
+},
+{
+"name": "Lipstick",
+"diamonds": 150,
+"emoji": "💄",
+"vi": "thỏi son"
+},
+{
+"name": "Teddy Bear",
+"diamonds": 199,
+"emoji": "🧸",
+"vi": "gấu bông"
+},
+{
+"name": "Sunglasses",
+"diamonds": 199,
+"emoji": "🕶️",
+"vi": "kính râm"
+},
+{
+"name": "Rainbow",
+"diamonds": 199,
+"emoji": "🌈",
+"vi": "cầu vồng"
+},
+{
+"name": "Champagne",
+"diamonds": 199,
+"emoji": "🍾",
+"vi": "chai sâm panh"
+},
+{
+"name": "Moon",
+"diamonds": 199,
+"emoji": "🌙",
+"vi": "vầng trăng"
+},
+{
+"name": "Guitar",
+"diamonds": 250,
+"emoji": "🎸",
+"vi": "cây đàn guitar"
+},
+{
+"name": "Camera",
+"diamonds": 250,
+"emoji": "📸",
+"vi": "máy ảnh"
+},
+{
+"name": "Dolphin",
+"diamonds": 250,
+"emoji": "🐬",
+"vi": "cá heo"
+},
+{
+"name": "Corgi",
+"diamonds": 299,
+"emoji": "🐶",
+"vi": "chú chó Corgi"
+},
+{
+"name": "Gift Box",
+"diamonds": 299,
+"emoji": "🎁",
+"vi": "hộp quà"
+},
+{
+"name": "Cupid",
+"diamonds": 300,
+"emoji": "💘",
+"vi": "thần tình yêu"
+},
+{
+"name": "Birthday Cake",
+"diamonds": 300,
+"emoji": "🎂",
+"vi": "bánh kem lớn"
+},
+{
+"name": "Diamond Ring",
+"diamonds": 300,
+"emoji": "💍",
+"vi": "nhẫn kim cương"
+},
+{
+"name": "Handbag",
+"diamonds": 350,
+"emoji": "👜",
+"vi": "túi xách"
+},
+{
+"name": "High Heels",
+"diamonds": 350,
+"emoji": "👠",
+"vi": "đôi giày cao gót"
+},
+{
+"name": "Shooting Star",
+"diamonds": 399,
+"emoji": "🌠",
+"vi": "sao băng"
+},
+{
+"name": "Couple",
+"diamonds": 399,
+"emoji": "💑",
+"vi": "đôi uyên ương"
+},
+{
+"name": "Infinity Heart",
+"diamonds": 450,
+"emoji": "♾️",
+"vi": "trái tim vô cực"
+},
+{
+"name": "Red Envelope",
+"diamonds": 500,
+"emoji": "🧧",
+"vi": "bao lì xì"
+},
+{
+"name": "Money Gun",
+"diamonds": 500,
+"emoji": "💸",
+"vi": "súng bắn tiền"
+},
+{
+"name": "Crown",
+"diamonds": 500,
+"emoji": "👑",
+"vi": "vương miện"
+},
+{
+"name": "Watch",
+"diamonds": 500,
+"emoji": "⌚",
+"vi": "đồng hồ"
+},
+{
+"name": "Unicorn",
+"diamonds": 599,
+"emoji": "🦄",
+"vi": "kỳ lân"
+},
+{
+"name": "Swan",
+"diamonds": 699,
+"emoji": "🦢",
+"vi": "thiên nga"
+},
+{
+"name": "Love Lock",
+"diamonds": 699,
+"emoji": "💞",
+"vi": "ổ khóa tình yêu"
+},
+{
+"name": "Bicycle",
+"diamonds": 799,
+"emoji": "🚲",
+"vi": "xe đạp"
+},
+{
+"name": "Wedding Cake",
+"diamonds": 888,
+"emoji": "🎂",
+"vi": "bánh cưới"
+},
+{
+"name": "Gold Bar",
+"diamonds": 999,
+"emoji": "🪙",
+"vi": "thỏi vàng"
+},
+{
+"name": "Galaxy",
+"diamonds": 1000,
+"emoji": "🌌",
+"vi": "dải ngân hà"
+},
+{
+"name": "Diamond",
+"diamonds": 1000,
+"emoji": "💎",
+"vi": "viên kim cương"
+},
+{
+"name": "Fireworks",
+"diamonds": 1088,
+"emoji": "🎆",
+"vi": "pháo hoa"
+},
+{
+"name": "Tiger",
+"diamonds": 1500,
+"emoji": "🐯",
+"vi": "chú hổ"
+},
+{
+"name": "Golden Egg",
+"diamonds": 1999,
+"emoji": "🥚",
+"vi": "quả trứng vàng"
+},
+{
+"name": "Motorcycle",
+"diamonds": 2500,
+"emoji": "🏍️",
+"vi": "xe máy"
+},
+{
+"name": "Treasure Chest",
+"diamonds": 2999,
+"emoji": "💰",
+"vi": "rương báu"
+},
+{
+"name": "Dragon",
+"diamonds": 4999,
+"emoji": "🐉",
+"vi": "con rồng"
+},
+{
+"name": "Phoenix",
+"diamonds": 5999,
+"emoji": "🦚",
+"vi": "phượng hoàng"
+},
+{
+"name": "Sports Car",
+"diamonds": 7000,
+"emoji": "🏎️",
+"vi": "siêu xe"
+},
+{
+"name": "Yacht",
+"diamonds": 9999,
+"emoji": "🛥️",
+"vi": "du thuyền"
+},
+{
+"name": "Castle",
+"diamonds": 12000,
+"emoji": "🏰",
+"vi": "lâu đài"
+},
+{
+"name": "Private Jet",
+"diamonds": 15000,
+"emoji": "✈️",
+"vi": "máy bay riêng"
+},
+{
+"name": "Rocket",
+"diamonds": 20000,
+"emoji": "🚀",
+"vi": "tên lửa"
+},
+{
+"name": "Interstellar",
+"diamonds": 25000,
+"emoji": "🛸",
+"vi": "phi thuyền"
+},
+{
+"name": "Lion",
+"diamonds": 29999,
+"emoji": "🦁",
+"vi": "chú sư tử"
+},
+{
+"name": "Universe",
+"diamonds": 34999,
+"emoji": "🪐",
+"vi": "vũ trụ"
+},
+{
+"name": "TikTok Universe",
+"diamonds": 44999,
+"emoji": "🌠",
+"vi": "vũ trụ TikTok"
+},
+{
+"name": "Love Island",
+"diamonds": 30000,
+"emoji": "🏝️",
+"vi": "hòn đảo tình yêu"
+},
+{
+"name": "Wedding Chapel",
+"diamonds": 20000,
+"emoji": "💒",
+"vi": "lễ đường cưới"
+}
+]

@@ -30,7 +30,11 @@ public static class LiveEndpoints
             WalkSpeed = Math.Clamp(o.CurrentValue.WalkSpeed, 80, 600),
             o.CurrentValue.IdleActivity,
             IdleAfterSeconds = Math.Clamp(o.CurrentValue.IdleAfterSeconds, 2, 600),
-            IdleEverySeconds = Math.Clamp(o.CurrentValue.IdleEverySeconds, 2, 120)
+            IdleEverySeconds = Math.Clamp(o.CurrentValue.IdleEverySeconds, 2, 120),
+            o.CurrentValue.MusicEnabled,
+            MusicEverySeconds = Math.Clamp(o.CurrentValue.MusicEverySeconds, 15, 3600),
+            MusicVolume = Math.Clamp(o.CurrentValue.MusicVolume, 0, 1),
+            MusicMaxSeconds = Math.Clamp(o.CurrentValue.MusicMaxSeconds, 10, 600)
         }));
 
         var api = app.MapGroup("/api/events").AddEndpointFilter<ApiKeyFilter>();
@@ -91,6 +95,23 @@ public static class LiveEndpoints
             return Results.Ok(new { queued = true });
         });
 
+        // ---- Nhạc: danh sách file trong wwwroot/music + admin bấm phát / dừng ----
+        app.MapGet("/api/music", (IWebHostEnvironment env) =>
+        {
+            var dir = Path.Combine(env.WebRootPath, "music");
+            if (!Directory.Exists(dir)) return Results.Ok(Array.Empty<string>());
+            var ext = new[] { ".mp3", ".ogg", ".m4a", ".wav" };
+            return Results.Ok(Directory.EnumerateFiles(dir)
+                .Where(f => ext.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Select(Path.GetFileName).OrderBy(f => f).ToArray());
+        });
+        api.MapPost("/music", async (MusicRequest req, IHubContext<WeddingHub> hub) =>
+        {
+            if (req.Action is not ("play" or "stop")) return Results.BadRequest("action = play | stop");
+            await hub.Clients.All.SendAsync("Music", new { action = req.Action });
+            return Results.Ok();
+        });
+
         // ---- Admin: thử màn ôm hôn / khiêu vũ của cô dâu chú rể ----
         api.MapPost("/couple", async (CoupleRequest req, IHubContext<WeddingHub> hub) =>
         {
@@ -113,6 +134,7 @@ public static class LiveEndpoints
     }
 
     public record CoupleRequest(string? Action);
+    public record MusicRequest(string? Action);
 
     private static GiftEvent Normalize(GiftEvent g) => g with
     {

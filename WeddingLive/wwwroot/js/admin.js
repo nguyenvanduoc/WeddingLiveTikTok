@@ -57,6 +57,8 @@
       catch (e) { log('❌ ' + e.message); }
     },
     diagnose: () => diagnose(),
+    musicPlay: async () => { if (await post('music', { action: 'play' })) log('🎵 Phát nhạc'); },
+    musicStop: async () => { if (await post('music', { action: 'stop' })) log('⏹ Dừng nhạc'); },
     hug: async () => { if (await post('couple', { action: 'hug' })) log('💋 Thử ôm hôn'); },
     dance: async () => { if (await post('couple', { action: 'dance' })) log('💃 Thử khiêu vũ'); },
     reset: async () => { if (confirm('Xóa bảng xếp hạng và tên khách?') && await post('reset')) log('♻️ Đã reset'); }

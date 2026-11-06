@@ -43,7 +43,7 @@
     function giftName(name) {
       const map = cfg.giftNames || {};
       const key = Object.keys(map).find(k => k.toLowerCase() === (name || '').toLowerCase());
-      return key ? map[key] : (name || 'món quà');
+      return key ? map[key] : (window.__giftCatalog?.[(name || '').toLowerCase()]?.vi || name || 'món quà');
     }
 
     // ---------------- Phát âm thanh ----------------
@@ -262,6 +262,10 @@
       npcVisit(name, offer) {
         if (playing || queue.length || !cfg.npcLines?.length) return;
         enqueue(fill(pick(cfg.npcLines), { ...base(), name, offer }), 0.6);
+      },
+      /** MC giới thiệu bài nhạc cưới. */
+      musicLine() {
+        if (cfg.musicLines?.length) enqueue(fill(pick(cfg.musicLines), base()), 1.5);
       },
       /** Sân khấu vắng: MC mời gọi người xem (chỉ khi MC đang rảnh). */
       idleLine() {

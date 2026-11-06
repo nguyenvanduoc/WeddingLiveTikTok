@@ -56,6 +56,15 @@ public class WeddingOptions
     /// <summary>Khoảng cách trung bình (giây) giữa 2 hoạt động của khách mời.</summary>
     public int IdleEverySeconds { get; set; } = 15;
 
+    /// <summary>Phát nhạc cưới khi vắng quà thật.</summary>
+    public bool MusicEnabled { get; set; } = true;
+    /// <summary>Bao nhiêu giây không có quà thật (và kể từ bài trước) thì phát 1 bài.</summary>
+    public int MusicEverySeconds { get; set; } = 60;
+    /// <summary>Âm lượng nhạc 0 - 1 (MC nói thì nhạc tự nhỏ lại).</summary>
+    public double MusicVolume { get; set; } = 0.35;
+    /// <summary>Bài (file) dài hơn thì nhỏ dần rồi dừng sau chừng này giây.</summary>
+    public int MusicMaxSeconds { get; set; } = 90;
+
     /// <summary>Thời gian giãn cách (ms) giữa 2 sự kiện quà gửi xuống trình duyệt.</summary>
     public int DispatchDelayMs { get; set; } = 250;
 }
