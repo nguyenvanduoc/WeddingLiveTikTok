@@ -93,3 +93,11 @@ pre#log {
 textarea { width: 100%; resize: vertical; margin-bottom: 8px; }
 h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
 #quickLines button { font-weight: 500; font-size: 13px; background: #3d2852; }
+
+label.check { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; color: var(--text); cursor: pointer; }
+label.check input { width: auto; margin: 0; }
+label.check small { color: var(--muted); }
+.vstatus { font-size: 13px; line-height: 1.6; padding: 8px 10px; border-radius: 8px; background: #1f1330; margin-bottom: 8px; }
+.vstatus .bad { color: var(--bad); }
+.vstatus .ok { color: var(--ok); }
+pre#diag { font-size: 13px; line-height: 1.6; background: #1f1330; padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; color: var(--text); }

@@ -31,6 +31,10 @@ public class TtsService
 
     private HttpClient Http => _httpFactory.CreateClient(HttpClientName);
 
+    /// <summary>Lỗi gần nhất khi gọi dịch vụ giọng đọc (null = lần gần nhất thành công).</summary>
+    public string? LastError { get; private set; }
+    public DateTime? LastErrorAt { get; private set; }
+
     /// <summary>Nhà cung cấp thực tế sẽ dùng: "google" | "azure" | "browser".</summary>
     public string ResolveProvider()
     {
@@ -54,6 +58,7 @@ public class TtsService
         try
         {
             var audio = provider == "azure" ? await AzureAsync(text, o, ct) : await GoogleAsync(text, ct);
+            LastError = null;
             if (_cache.Count >= MaxCacheItems) _cache.Clear();
             _cache[key] = audio;
             return audio;
@@ -61,6 +66,8 @@ public class TtsService
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             _logger.LogWarning("TTS ({Provider}) lỗi: {Message}", provider, ex.Message);
+            LastError = $"{provider}: {ex.Message}";
+            LastErrorAt = DateTime.Now;
             return null;
         }
         finally

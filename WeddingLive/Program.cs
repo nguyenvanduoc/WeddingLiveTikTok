@@ -15,6 +15,7 @@ builder.Services.AddSignalR();
 // Các service dùng chung toàn app
 builder.Services.AddSingleton<LeaderboardService>();
 builder.Services.AddSingleton<BridgeStatusStore>();
+builder.Services.AddSingleton<StageRegistry>();
 builder.Services.AddSingleton<GiftQueueService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GiftQueueService>());
 
@@ -33,7 +34,12 @@ var app = builder.Build();
 
 app.UseCors();
 app.UseDefaultFiles();   // "/" -> wwwroot/index.html
-app.UseStaticFiles();    // phục vụ js, css, lib trong wwwroot
+// Phục vụ js, css, lib trong wwwroot. "no-cache" = trình duyệt luôn hỏi lại server (304 nếu không đổi)
+// => sau khi git pull, F5 là chắc chắn lấy code mới, không dính bản cũ trong cache.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 app.MapHub<WeddingHub>("/hub/wedding");
 app.MapLiveEndpoints();

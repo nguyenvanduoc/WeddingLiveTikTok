@@ -17,6 +17,11 @@
     let announceIndex = 0;
     let isStageBusy = () => false;
 
+    // Trạng thái giọng (báo về server để trang admin chẩn đoán):
+    // waiting | ok | blocked (trình duyệt chặn) | fallback (server TTS lỗi, dùng giọng trình duyệt) | disabled | muted
+    let state = 'waiting', onState = () => { };
+    const setState = (s) => { if (s !== state) { state = s; onState(s); } };
+
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const fill = (tpl, data) => tpl.replace(/\{(\w+)\}/g, (_, k) => data[k] ?? '');
     const base = () => ({ bride: wedding.brideName, groom: wedding.groomName });
@@ -34,13 +39,13 @@
     }
 
     // ---------------- Phát âm thanh ----------------
-    function playUrl(url) {
+    function playUrl(url, onStart) {
       return new Promise((resolve, reject) => {
         const a = new Audio(url);
         a.volume = cfg.volume ?? 1;
         a.onended = () => resolve();
         a.onerror = () => reject(new Error('audio-error'));
-        a.play().catch(reject);            // NotAllowedError = trình duyệt chặn tự phát âm thanh
+        a.play().then(onStart).catch(reject);   // NotAllowedError = trình duyệt chặn tự phát âm thanh
       });
     }
 
@@ -62,10 +67,11 @@
     async function say(text) {
       if (cfg.provider === 'browser') return speakBrowser(text);
       try {
-        await playUrl('/api/tts?text=' + encodeURIComponent(text));
+        await playUrl('/api/tts?text=' + encodeURIComponent(text), () => setState('ok'));
       } catch (err) {
         if (err && err.name === 'NotAllowedError') throw err;
         console.warn('TTS server lỗi, dùng giọng trình duyệt', err);
+        setState('fallback');
         await speakBrowser(text);
       }
     }
@@ -125,6 +131,7 @@
     function showUnlock() {
       if (locked) return;
       locked = true;
+      setState('blocked');
       const btn = document.createElement('button');
       btn.className = 'voice-unlock';
       btn.textContent = '🔊 Bấm để bật giọng MC';
@@ -146,9 +153,13 @@
       async load() {
         try { cfg = await (await fetch('/api/voice/config')).json(); } catch { cfg = { enabled: false }; }
         if ('speechSynthesis' in window) speechSynthesis.getVoices();   // nạp sẵn danh sách giọng
+        if (MUTED_BY_URL) setState('muted'); else if (!cfg.enabled) setState('disabled');
         return cfg;
       },
       setBusyCheck(fn) { isStageBusy = fn; },
+      onStateChange(fn) { onState = fn; },
+      get state() { return state; },
+      muted: MUTED_BY_URL,
       /** Gọi khi khách trao quà xong. */
       thankGift(gift, big) {
         if (big) {

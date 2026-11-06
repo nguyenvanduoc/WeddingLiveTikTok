@@ -44,6 +44,16 @@ public static class VoiceEndpoints
             });
         });
 
+        // Chẩn đoán cho trang admin: giọng nào, lỗi gần nhất, các trang sân khấu đang mở
+        app.MapGet("/api/voice/status", (IOptionsMonitor<VoiceOptions> opt, TtsService tts, StageRegistry stages) => Results.Ok(new
+        {
+            opt.CurrentValue.Enabled,
+            Provider = tts.ResolveProvider(),
+            tts.LastError,
+            tts.LastErrorAt,
+            Stages = stages.All().Select(s => new { s.VoiceOn, s.State, s.UserAgent, s.Since })
+        }));
+
         app.MapGet("/api/tts", async (string? text, TtsService tts, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(text) || text.Length > MaxTextLength)

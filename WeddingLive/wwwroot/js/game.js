@@ -485,7 +485,7 @@
     // =================================================================
     connectSignalR() {
       const conn = new signalR.HubConnectionBuilder()
-        .withUrl('/hub/wedding')
+        .withUrl(`/hub/wedding?role=stage&voice=${voice.muted ? 0 : 1}`)
         .withAutomaticReconnect([0, 2000, 5000, 10000])
         .configureLogging(signalR.LogLevel.Warning)
         .build();
@@ -499,8 +499,13 @@
       conn.on('Speak', e => voice.speakNow(e.text));
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 
+      // Báo trạng thái giọng về server (trang admin hiển thị để chẩn đoán)
+      const report = () => conn.state === 'Connected' && conn.invoke('ReportVoiceState', voice.state).catch(() => { });
+      voice.onStateChange(report);
+      conn.onreconnected(report);
+
       const start = async () => {
-        try { await conn.start(); console.log('SignalR connected'); }
+        try { await conn.start(); console.log('SignalR connected'); report(); }
         catch (err) { console.warn('SignalR lỗi, thử lại sau 3s', err); setTimeout(start, 3000); }
       };
       conn.onclose(() => setTimeout(start, 3000));   // hết lượt auto-reconnect thì tự thử lại

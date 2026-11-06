@@ -101,6 +101,13 @@ Giọng đọc (`Voice:Provider`):
 - Chrome thường chặn tự phát âm thanh → trên sân khấu hiện nút **🔊 Bấm để bật giọng MC**, bấm 1 lần là được.
 - Khung xem trước trong admin đã tắt tiếng (`?voice=0`) để không phát trùng.
 
+**Không nghe thấy giọng?** Vào trang admin → mục 🎙️ MC ảo → bấm **🩺 Kiểm tra giọng**. Hay gặp nhất:
+
+1. Chỉ mở trang admin: khung xem trước ở admin **mặc định tắt tiếng**. Mở `http://localhost:5000/` ở tab khác (hoặc OBS), hoặc tick **🔊 Bật tiếng khung xem trước này**.
+2. OBS đã tick *Control audio via OBS* → tiếng vào luồng live nhưng **không ra loa máy bạn**. Audio Mixer → ⚙ *Advanced Audio Properties* → *Audio Monitoring* = **Monitor and Output**.
+3. Chrome chặn tự phát → bấm nút **🔊 Bấm để bật giọng MC** trên trang sân khấu.
+4. Server không lấy được giọng → xem dòng `TTS (...) lỗi` trong cửa sổ `dotnet run`.
+
 Sửa câu nói trong `appsettings.json` → mục `Voice` (biến: `{bride}` `{groom}` `{name}` `{count}` `{gift}` `{names}`),
 cách đọc tên quà ở `Voice:GiftNames` (ví dụ `"Rose": "bông hồng"`).
 
