@@ -126,6 +126,11 @@ Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu:
 - Sân khấu lặng **3 giây** → MC nói câu dẫn tiếp (`Voice:Announcements`, `AnnounceIntervalSeconds`) ⇒ nói gần như liên tục.
   Câu có `{top1}` (người tặng nhiều nhất) chỉ đọc khi đã có người tặng.
 - Follow → "Cảm ơn … đã theo dõi kênh!". Admin gõ câu → MC đọc ngay.
+- **Bình luận trên live → MC ưu tiên đọc** ("Lan Phương nói: Chúc mừng hạnh phúc!"), trước câu dẫn và câu đọc tên người tặng quà.
+  Chống spam: tối đa `MaxPendingChats` (4) bình luận mới nhất chờ đọc, cùng người cùng câu trong 30s chỉ đọc 1 lần;
+  bỏ emoji, bỏ bình luận có link / toàn emoji, cắt câu dài hơn `MaxChatLength`.
+  **Từ cấm** `Voice:BannedWords`: có từ cấm thì không đọc và không hiện bong bóng (từ ≤ 3 ký tự so nguyên từ để không chặn nhầm "admin", "vlog").
+  Tắt đọc bình luận: `"ReadChat": false`. Mẫu câu: `Voice:ChatTemplates` (`{name}` `{comment}`).
 - Tốc độ mặc định **x2.5** (`Voice:Speed`, 0.5 – 3.0), kéo thanh trượt trong admin để đổi ngay.
 
 **Live bằng TikTok LIVE Studio:** bấm đúp `open-stage.bat` → mở sân khấu trong cửa sổ Chrome/Edge riêng **được tự phát âm thanh**

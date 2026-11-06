@@ -650,6 +650,8 @@
     //  BÌNH LUẬN / THẢ TIM / FOLLOW
     // =================================================================
     onChat(e) {
+      if (voice.isBlocked(e)) return;                // có từ cấm: không đọc, không hiện bong bóng
+      voice.readChat(e);                             // MC ưu tiên đọc bình luận
       // Khách đang mang tên người đó sẽ nói; nếu chưa có thì 1 khách rảnh bất kỳ nói hộ
       const g = this.guests.find(x => x.userId === e.userId) ||
                 Phaser.Utils.Array.GetRandom(this.guests.filter(x => !x.busy)) || this.guests[0];

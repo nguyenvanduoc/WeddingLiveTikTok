@@ -41,6 +41,18 @@ public class VoiceOptions
 
     public bool ThankFollow { get; set; } = true;
 
+    /// <summary>MC ưu tiên đọc bình luận trên live (đọc trước câu dẫn và câu đọc tên người tặng quà).</summary>
+    public bool ReadChat { get; set; } = true;
+    /// <summary>Số bình luận chờ đọc tối đa; nhiều hơn thì bỏ bình luận cũ nhất (chống spam).</summary>
+    public int MaxPendingChats { get; set; } = 4;
+    /// <summary>Bình luận dài hơn thì cắt bớt.</summary>
+    public int MaxChatLength { get; set; } = 100;
+    /// <summary>Mẫu câu đọc bình luận. Biến: {name} {comment}.</summary>
+    public List<string>? ChatTemplates { get; set; }
+    /// <summary>Từ cấm: bình luận/tên có từ này thì không đọc, không hiện bong bóng.
+    /// Từ ngắn (≤ 3 ký tự) so khớp nguyên từ, từ dài so khớp một phần; không phân biệt dấu.</summary>
+    public List<string>? BannedWords { get; set; }
+
     // Để trống (null) trong appsettings => dùng câu mặc định bên dưới. Câu dẫn có {top1} (người tặng
     // nhiều nhất) chỉ được đọc khi đã có người tặng quà.
     // (Không gán sẵn giá trị cho List vì config binder sẽ cộng dồn thay vì thay thế.)
@@ -131,6 +143,10 @@ public class VoiceOptions
         "Tuyệt vời! Thanh tình yêu đã đầy! Xin mời cô dâu {bride} và chú rể {groom} cùng nhảy điệu valse tình yêu!",
         "Âm nhạc lên nào! Cô dâu chú rể khiêu vũ rồi! Xin một tràng pháo tay thật lớn và cảm ơn tất cả quý vị đã tặng quà!"
     };
+
+    public static readonly string[] DefaultChatTemplates = { "{name} nói: {comment}", "{name} gửi lời chúc: {comment}", "Bạn {name} bình luận: {comment}" };
+
+    public static readonly string[] DefaultBannedWords = { "địt", "đụ", "lồn", "cặc", "buồi", "đéo", "đếch", "đĩ", "vãi", "dm", "đm", "dmm", "đmm", "vcl", "vkl", "vl", "clm", "cc", "cmm", "đcm", "dcm", "fuck", "shit" };
 
     public static readonly Dictionary<string, string> DefaultGiftNames = new(StringComparer.OrdinalIgnoreCase)
     {

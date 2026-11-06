@@ -122,15 +122,48 @@
       setTimeout(pump, 250);
     }
 
-    function enqueue(text, priority) {
+    function enqueue(text, priority, extra = {}) {
       if (!text) return;
       // Hàng đợi quá dài (quà dồn dập): bỏ câu ít quan trọng / cũ nhất
       if (queue.length >= 12) {
         queue.sort((a, b) => b.priority - a.priority);
         if (queue.at(-1).priority <= priority) queue.pop(); else return;
       }
-      queue.push({ text, priority });
+      queue.push({ text, priority, ...extra });
       pump();
+    }
+
+    // ---------------- Bình luận: làm sạch + lọc từ cấm + chống spam ----------------
+    const PRIORITY_CHAT = 2.8;                 // đọc trước câu đọc tên người tặng (2) và ôm hôn/khiêu vũ (2.5), sau admin (3)
+    const recentChats = new Map();             // "người|câu" -> thời điểm đã nhận
+    const noMarks = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+
+    function isBanned(text) {
+      const words = cfg.bannedWords || [];
+      if (!words.length || !text) return false;
+      const raw = text.toLowerCase(), plain = noMarks(text);
+      const tokens = new Set(raw.split(/[^\p{L}\p{N}]+/u).concat(plain.split(/[^a-z0-9]+/)));
+      return words.some(w => {
+        const lw = w.toLowerCase().trim(), pw = noMarks(w).trim();
+        if (!lw) return false;
+        // Từ ngắn (vd "vl", "dm") chỉ khớp nguyên từ để không chặn nhầm "admin", "vlog"...
+        if (pw.length <= 3) return tokens.has(lw) || (lw === pw && tokens.has(pw));
+        return raw.includes(lw) || (lw === pw ? plain.includes(pw) : false);
+      });
+    }
+
+    /** Làm sạch bình luận để đọc; trả về null nếu không nên đọc (link, toàn emoji, từ cấm). */
+    function cleanComment(s) {
+      if (!s || /(https?:\/\/|www\.|\.com\b|\.vn\b)/i.test(s)) return null;
+      let t = s.normalize('NFC')
+        .replace(/[^\p{L}\p{N}\s.,!?'"-]/gu, ' ')     // bỏ emoji, ký hiệu
+        .replace(/([!?.,])\1+/g, '$1')                  // "!!!!" -> "!"
+        .replace(/(\p{L})\1{3,}/gu, '$1$1')             // "quáaaaaa" -> "quáa"
+        .replace(/\s+/g, ' ').trim();
+      if ((t.match(/\p{L}/gu) || []).length < 2) return null;   // toàn emoji / ký hiệu
+      const max = cfg.maxChatLength || 100;
+      if (t.length > max) t = t.slice(0, t.lastIndexOf(' ', max) > max / 2 ? t.lastIndexOf(' ', max) : max) + '…';
+      return t;
     }
 
     // ---------------- Nút bật âm thanh (khi trình duyệt chặn autoplay) ----------------
@@ -176,6 +209,23 @@
       get silent() { return MUTED_BY_URL || !cfg.enabled; },
       /** MC: gọi khi bắt đầu nói (kèm câu đang nói) và khi im lặng. */
       onSpeech(start, end) { onSpeak = start; onSilent = end; },
+      /** Bình luận/tên có từ cấm không (sân khấu dùng để ẩn bong bóng chat). */
+      isBlocked(e) { return isBanned(e?.comment) || isBanned(e?.nickname); },
+      /** Bình luận trên live: MC ưu tiên đọc. */
+      readChat(e) {
+        if (cfg.readChat === false || this.isBlocked(e)) return;
+        const comment = cleanComment(e.comment);
+        if (!comment) return;
+        // Cùng người nhắn cùng câu trong 30 giây => chỉ đọc 1 lần
+        const key = (e.userId || e.nickname) + '|' + comment.toLowerCase(), now = performance.now();
+        if (recentChats.get(key) > now - 30000) return;
+        recentChats.set(key, now);
+        if (recentChats.size > 300) recentChats.clear();
+        // Spam bình luận: chỉ giữ N bình luận mới nhất đang chờ đọc
+        const waiting = queue.filter(q => q.chat);
+        if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
+        enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }), PRIORITY_CHAT, { chat: true });
+      },
       /** Cập nhật thanh tình yêu: { points, left, next } (dùng cho {points} {left} {next}). */
       setMeter(m) { meter = m; },
       /** Khích lệ người xem tặng quà (khi thanh tình yêu được 50% / 80%). */
