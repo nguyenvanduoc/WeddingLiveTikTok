@@ -131,6 +131,26 @@
     g.fillStyle(0x111111, 1).fillEllipse(0, -106, 36, 16).fillEllipse(-10, -104, 16, 12);
   }
 
+  // MC: áo dài đỏ, búi tóc cài hoa, tay phải cầm micro
+  function drawMC(g) {
+    const skin = 0xffe0bd, hair = 0x1a1110, red = 0xc9184a, gold = 0xffd166;
+    g.fillStyle(hair, 1).fillRoundedRect(-17, -108, 34, 28, 12);                     // tóc phía sau
+    g.fillStyle(red, 1).fillRoundedRect(-17, -82, 34, 40, 9);                        // thân áo dài
+    g.fillStyle(red, 1).fillRect(-12, -46, 24, 40);                                  // tà áo trước
+    g.fillStyle(0xa4133c, 1).fillRect(-12, -46, 3, 40).fillRect(9, -46, 3, 40);      // viền tà
+    g.fillStyle(gold, 1).fillRect(-6, -82, 12, 4);                                   // cổ áo
+    [[-4, -66], [5, -58], [-3, -36], [4, -24], [-4, -14]].forEach(([x, y]) => g.fillCircle(x, y, 2.5));   // hoa văn
+    g.fillStyle(red, 1).fillRoundedRect(-25, -78, 8, 30, 4);                         // tay trái buông
+    g.fillStyle(red, 1).fillRoundedRect(17, -80, 8, 18, 4).fillRoundedRect(17, -96, 8, 20, 4);  // tay phải giơ micro
+    g.fillStyle(skin, 1).fillCircle(-21, -46, 4).fillCircle(21, -96, 4);
+    drawFace(g, -96, skin);
+    g.fillStyle(0x333333, 1).fillRoundedRect(19, -106, 5, 14, 2);                    // micro
+    g.fillStyle(0x777777, 1).fillCircle(21.5, -108, 5.5);
+    g.fillStyle(hair, 1).fillEllipse(0, -106, 36, 18).fillCircle(0, -118, 8);        // tóc + búi
+    g.fillStyle(0xffffff, 1).fillCircle(9, -113, 3.5);                               // hoa cài tóc
+    g.fillStyle(0xff8fab, 1).fillCircle(9, -113, 1.5);
+  }
+
   // ---------- Chân (ảnh riêng, xoay quanh hông để đung đưa khi đi) ----------
   function makeLeg(scene, x, color, shoe) {
     return baked(scene, `leg_${color}_${shoe}`, 14, 36, 6, 0, g => {
@@ -158,8 +178,14 @@
     const puppet = scene.add.container(0, 0);   // phần nhún nhảy khi đi
     let body, back = null, legL = null, legR = null;
 
+    let mouth = null;
     if (type === 'bride') {
       body = baked(scene, 'bride_body', BW, BH, OX, OY, drawBride);
+    } else if (type === 'mc') {
+      legL = makeLeg(scene, -6, 0xfff4f8, 0xc9184a);
+      legR = makeLeg(scene, 6, 0xfff4f8, 0xc9184a);
+      body = baked(scene, 'mc_body', BW, BH, OX, OY, drawMC);
+      mouth = scene.add.ellipse(0, -90, 8, 6, 0x8a3b2b).setVisible(false);       // miệng mở khi nói
     } else if (type === 'groom') {
       legL = makeLeg(scene, -7, 0x1d1d2b, 0x0d0d0d);
       legR = makeLeg(scene, 7, 0x1d1d2b, 0x0d0d0d);
@@ -175,6 +201,7 @@
     if (legL) puppet.add([legL, legR]);
     puppet.add(body);
     if (back) puppet.add(back);
+    if (mouth) puppet.add(mouth);
 
     // Món quà cầm trên tay (ẩn khi không có)
     const gift = scene.add.text(24, -50, '', { fontFamily: FONT, fontSize: '26px' }).setOrigin(0.5);
@@ -182,7 +209,7 @@
 
     root.add([shadow, puppet]);
 
-    const person = { root, puppet, body, back, legL, legR, gift, walkTweens: [], facing: 'front' };
+    const person = { root, puppet, body, back, legL, legR, gift, mouth, walkTweens: [], facing: 'front' };
     if (type === 'bride' || type === 'groom') root.setScale(1.3);
     return person;
   }

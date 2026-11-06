@@ -35,13 +35,13 @@ public static class VoiceEndpoints
                 Volume = Math.Clamp(o.Volume, 0, 1),
                 Speed = o.ClampedSpeed,
                 // Trình duyệt tự tăng tốc khi phát nếu giọng không tự chỉnh được tốc độ
-                ClientSpeed = tts.ProviderHandlesSpeed ? 1.0 : o.ClampedSpeed,
+                ClientSpeed = tts.ClientSpeed(o.ClampedSpeed),
                 AnnounceIntervalSeconds = Math.Max(0, o.AnnounceIntervalSeconds),
                 o.ThankFollow,
                 Announcements = Or(o.Announcements, VoiceOptions.DefaultAnnouncements),
                 GiftThanks = Or(o.GiftThanks, VoiceOptions.DefaultGiftThanks),
                 BigGiftThanks = Or(o.BigGiftThanks, VoiceOptions.DefaultBigGiftThanks),
-                GroupThanks = Or(o.GroupThanks, VoiceOptions.DefaultGroupThanks),
+                GiftAnnounce = Or(o.GiftAnnounce, VoiceOptions.DefaultGiftAnnounce),
                 FollowThanks = Or(o.FollowThanks, VoiceOptions.DefaultFollowThanks),
                 GiftNames = giftNames
             });
