@@ -12,7 +12,8 @@
     let cfg = { enabled: false };
     const queue = [];            // { text, priority }  3 = admin, 2 = đọc tên người tặng quà, 1 = follow/cảm ơn, 0 = câu dẫn
     let playing = false, locked = false;
-    let current = null, stopCurrent = null;    // câu đang đọc + hàm ngắt nó (để quà/tin nhắn THẬT chen ngay)
+    let current = null, stopCurrent = null;
+    let realSpoken = () => { };                // game.js đăng ký để đo độ trễ (bridge nhận -> MC bắt đầu đọc)    // câu đang đọc + hàm ngắt nó (để quà/tin nhắn THẬT chen ngay)
     const PRIORITY_REAL = 3.8;                 // quà / bình luận THẬT từ TikTok: đọc đầu tiên
     let lastSpoke = performance.now() - 1e9;     // mở trang là MC chào ngay
     let topGifter = '';                          // người tặng nhiều nhất (cho câu dẫn có {top1})
@@ -50,9 +51,10 @@
     }
 
     // ---------------- Phát âm thanh ----------------
-    function playUrl(url, onStart) {
+    const ttsUrl = (text) => '/api/tts?text=' + encodeURIComponent(text);
+    function playUrl(url, onStart, preloaded) {
       return new Promise((resolve, reject) => {
-        const a = new Audio(url);
+        const a = preloaded || new Audio(url);
         a.volume = cfg.volume ?? 1;
         a.preservesPitch = true;                 // đọc nhanh mà không bị the thé
         a.playbackRate = cfg.clientSpeed || 1;   // giọng Google Translate: tăng tốc khi phát
@@ -82,10 +84,10 @@
       });
     }
 
-    async function say(text) {
+    async function say(text, preloaded) {
       if (cfg.provider === 'browser') return speakBrowser(text);
       try {
-        await playUrl('/api/tts?text=' + encodeURIComponent(text), () => setState('ok'));
+        await playUrl(ttsUrl(text), () => setState('ok'), preloaded);
       } catch (err) {
         if (err && err.name === 'NotAllowedError') throw err;
         console.warn('TTS server lỗi, dùng giọng trình duyệt', err);
@@ -119,13 +121,14 @@
       if (!item) return;
       playing = true;
       current = item; stopCurrent = null;
+      if (item.real && item.ts) realSpoken(item);
       onSpeak(item.text);
       try {
         if (silent()) {
           // Trang tắt tiếng (vd khung xem trước ở admin): MC vẫn nhép miệng + hiện phụ đề theo thời lượng ước tính
           await delay(Math.max(1200, item.text.length * 75 / (cfg.speed || 1)));
         } else {
-          await say(item.text);
+          await say(item.text, item.audio);
         }
       } catch (err) {
         if (err && err.name === 'NotAllowedError') {   // bị chặn autoplay: giữ câu lại, hiện nút bật tiếng
@@ -139,7 +142,7 @@
       playing = false;
       onSilent();
       lastSpoke = performance.now();
-      setTimeout(pump, 250);
+      setTimeout(pump, queue.some(q => q.real) ? 50 : 250);   // còn tin thật => đọc tiếp liền
     }
 
     function enqueue(text, priority, extra = {}) {
@@ -150,9 +153,14 @@
         queue.sort((a, b) => effective(b, now) - effective(a, now));
         if (effective(queue.at(-1), now) <= priority) queue.pop(); else return;
       }
-      queue.push({ text, priority, at: performance.now(), ...extra });
+      const item = { text, priority, at: performance.now(), ...extra };
+      // Tin THẬT: tải trước giọng đọc ngay khi nhận => tới lượt là phát liền, không chờ tạo giọng
+      if (item.real && !silent() && cfg.provider !== 'browser') {
+        try { item.audio = new Audio(ttsUrl(text)); item.audio.preload = 'auto'; item.audio.load(); } catch { item.audio = null; }
+      }
+      queue.push(item);
       // Tin THẬT tới trong lúc MC đang nói câu tự động / câu DEMO => ngắt câu đó, đọc tin thật ngay
-      if (priority >= PRIORITY_REAL && playing && current && current.priority < 3 && stopCurrent) {
+      if (priority >= PRIORITY_REAL && playing && current && !current.real && current.priority < 4 && stopCurrent) {
         const stop = stopCurrent; stopCurrent = null; stop();
       }
       pump();
@@ -293,7 +301,7 @@
         const waiting = queue.filter(q => q.chat && (e.demo || !q.real));   // bình luận thật không bị bỏ vì bình luận khác
         if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
         enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }),
-          e.demo ? 1.2 : PRIORITY_REAL, { chat: true, real: !e.demo });
+          e.demo ? 1.2 : PRIORITY_REAL, { chat: true, real: !e.demo, ts: e.ts, tiktokTs: e.tiktokTs, kind: 'chat' });
         return 'queued';
       },
       /** Khách mời trong tiệc lên chúc mừng (chỉ khi MC rảnh, ưu tiên thấp hơn mọi thứ từ TikTok). */
@@ -326,13 +334,15 @@
       /** Khách bắt đầu lên sân khấu: đọc tên người tặng + quà gì (mỗi quà 1 câu). */
       announceGift(gift) {
         lastGiftAt = performance.now();
-        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), gift.demo ? 1.2 : PRIORITY_REAL, { real: !gift.demo });
+        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), gift.demo ? 1.2 : PRIORITY_REAL, { real: !gift.demo, ts: gift.ts, tiktokTs: gift.tiktokTs, kind: 'gift' });
       },
       /** Khách trao quà xong: quà lớn thì cảm ơn thêm; quà thường cảm ơn khi MC đang rảnh. */
       thankGift(gift, big) {
         if (big) enqueue(fill(pick(cfg.bigGiftThanks), giftData(gift)), 3.4);
         else if (!playing && !queue.length) enqueue(fill(pick(cfg.giftThanks), giftData(gift)), 1);
       },
+      /** Đăng ký hàm nhận thông báo "MC bắt đầu đọc tin thật" (đo độ trễ). */
+      onRealSpoken(fn) { realSpoken = fn; },
       /** Quà dồn quá nhiều: cảm ơn gộp những người không kịp lên sân khấu. */
       thankMany(names) {
         const list = [...new Set(names.map(cleanName))];

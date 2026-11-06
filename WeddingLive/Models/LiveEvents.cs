@@ -15,6 +15,11 @@ public record GiftEvent
     public long TotalDiamonds => (long)DiamondValue * Math.Max(1, Count);
     /// <summary>true = quà giả do bridge chế độ DEMO tạo ra (không phải người thật trên TikTok).</summary>
     public bool Demo { get; init; }
+    /// <summary>true = phần cộng thêm khi combo kết thúc (lần bấm đầu đã gửi & đã đọc rồi).</summary>
+    public bool More { get; init; }
+    /// <summary>Lúc bridge nhận (ms) và lúc TikTok tạo sự kiện (ms) – để đo độ trễ.</summary>
+    public long? Ts { get; init; }
+    public long? TiktokTs { get; init; }
 }
 
 /// <summary>Bình luận trên live.</summary>
@@ -24,6 +29,8 @@ public record ChatEvent
     public string Nickname { get; init; } = "";
     public string Comment { get; init; } = "";
     public bool Demo { get; init; }
+    public long? Ts { get; init; }
+    public long? TiktokTs { get; init; }
 }
 
 /// <summary>Thả tim.</summary>

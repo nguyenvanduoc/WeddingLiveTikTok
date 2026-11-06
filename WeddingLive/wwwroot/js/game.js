@@ -689,6 +689,7 @@
 
     onGift(gift) {
       this.stat('gift');
+      if (gift.more) return this.onGiftMore(gift);
       this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       this.lastRealGift = performance.now();
@@ -711,6 +712,25 @@
       else this.queue.push(gift);
       this.trimQueue();
       this.processQueue();
+    }
+
+    /**
+     * Phần cộng thêm khi combo kết thúc (vd bấm Rose x10): lần bấm đầu đã đọc & đi lên rồi.
+     * Nếu quà đó còn đang chờ thì cộng số lượng; không thì chỉ hiện banner + cộng thanh tình yêu (không đọc lại).
+     */
+    onGiftMore(gift) {
+      const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
+      if (same) {
+        same.count += gift.count;
+        if (gift.meter && (!same.meter || gift.meter.seq > same.meter.seq)) same.meter = gift.meter;
+        same.actions = [...(same.actions || []), ...(gift.actions || [])];
+        return;
+      }
+      const acts = gift.actions || [];
+      if (acts.includes('dance')) this.pendingMeter = gift.meter; else if (gift.meter) this.onMeter(gift.meter);
+      acts.forEach(a => this.queueCouple(a));
+      this.banner(`${giftEmoji(gift.giftName)} ${gift.nickname} tặng thêm ${gift.count} ${gift.giftName}`, isBig(gift));
+      this.hearts.explode(20, CENTER_X, 230);
     }
 
     /**
@@ -1080,6 +1100,14 @@
         conn.invoke('ReportStageStats', JSON.stringify(this.stats || {})).catch(() => { });
       };
       setInterval(() => reportStats(false), 2000);
+      // Độ trễ tin thật gần nhất: TikTok -> bridge, bridge -> MC bắt đầu đọc (giây)
+      voice.onRealSpoken(item => {
+        const s = (this.stats ||= {});
+        s.lagMc = Math.round((Date.now() - item.ts) / 100) / 10;
+        s.lagTt = item.tiktokTs ? Math.round((item.ts - item.tiktokTs) / 100) / 10 : null;
+        s.lagKind = item.kind;
+        this.statsDirty = true;
+      });
       setInterval(() => { try { this.watchdog(); } catch (err) { console.error(err); } }, 3000);
       music.setOff(!MUSIC_ON());
       music.onStateChange(reportMusic);

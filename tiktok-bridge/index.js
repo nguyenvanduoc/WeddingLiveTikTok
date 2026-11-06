@@ -95,6 +95,14 @@ function giftImage(d) {
   return first(d.giftDetails?.giftImage?.giftPictureUrl, d.gift?.image?.url) ?? null;
 }
 
+// Thời điểm TikTok tạo sự kiện (ms) – để đo độ trễ TikTok -> bridge
+function tiktokTime(d) {
+  const t = Number(first(d.common?.createTime, d.createTime, d.event?.createTime, 0));
+  if (!t) return null;
+  return t < 1e12 ? t * 1000 : t;                // có bản trả về giây
+}
+const lag = (t) => t.tiktokTs ? `  ⏱️ ${((t.ts - t.tiktokTs) / 1000).toFixed(1)}s` : '';
+
 // =====================================================================
 //  CHẾ ĐỘ LIVE THẬT
 // =====================================================================
@@ -119,13 +127,35 @@ function startLive() {
     return false;
   };
 
+  // Quà combo (giftType = 1, vd Rose): GỬI NGAY ở lần bấm đầu tiên để MC đọc liền (không đợi hết combo),
+  // khi combo kết thúc (repeatEnd) chỉ gửi thêm phần còn lại với cờ more=true (để cộng điểm, không đọc lại).
+  const combos = new Map();                       // "người|quà|nhóm" -> số đã gửi
+  setInterval(() => { const now = Date.now(); for (const [k, c] of combos) if (now - c.at > 120000) combos.delete(k); }, 30000);
+
   connection.on(WebcastEvent.GIFT, (d) => {
     if (isDuplicate(d, null)) return;
+    const recvAt = Date.now();
     const g = giftInfo(d);
-    if (g.type === 1 && !d.repeatEnd) return;
     const user = mapUser(d.user);
-    console.log(`🎁 ${user.nickname} tặng ${g.count} x ${g.name} (${g.diamonds}💎/cái)${g.imageUrl ? ' 🖼️' : ''}`);
-    post('gift', { ...user, giftName: g.name, count: g.count, diamondValue: g.diamonds, giftImageUrl: g.imageUrl });
+    const timing = { ts: recvAt, tiktokTs: tiktokTime(d) };
+    const send = (count, more) => {
+      console.log(`🎁 ${user.nickname} tặng ${more ? 'thêm ' : ''}${count} x ${g.name} (${g.diamonds}💎/cái)${g.imageUrl ? ' 🖼️' : ''}${lag(timing)}`);
+      post('gift', { ...user, giftName: g.name, count, diamondValue: g.diamonds, giftImageUrl: g.imageUrl, more, ...timing });
+    };
+    if (g.type !== 1) return send(g.count, false);  // quà không combo: gửi luôn
+
+    const key = `${user.userId}|${first(d.giftId, g.name)}|${first(d.groupId, d.comboId, '')}`;
+    const c = combos.get(key);
+    if (!c) {                                       // lần bấm đầu tiên của combo: gửi ngay
+      combos.set(key, { sent: g.count, at: recvAt });
+      send(g.count, false);
+    } else if (g.count > c.sent && (d.repeatEnd || g.count - c.sent >= 10)) {
+      // Combo kết thúc (hoặc bấm thêm nhiều): gửi phần chênh lệch
+      const extra = g.count - c.sent;
+      c.sent = g.count; c.at = recvAt;
+      send(extra, true);
+    }
+    if (d.repeatEnd) combos.delete(key);
   });
 
   connection.on(WebcastEvent.CHAT, (d) => {
@@ -133,8 +163,9 @@ function startLive() {
     if (!comment) return;
     const user = mapUser(d.user);
     if (isDuplicate(d, null)) return;
-    console.log(`💬 ${user.nickname}: ${comment}`);
-    post('chat', { userId: user.userId, nickname: user.nickname, comment });
+    const timing = { ts: Date.now(), tiktokTs: tiktokTime(d) };
+    console.log(`💬 ${user.nickname}: ${comment}${lag(timing)}`);
+    post('chat', { userId: user.userId, nickname: user.nickname, comment, ...timing });
   });
 
   // Tim đến rất dày => gom lại, 1.5 giây gửi 1 lần

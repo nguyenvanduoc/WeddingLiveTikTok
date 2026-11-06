@@ -194,10 +194,12 @@
       : '⏳ chờ tới lượt bài tiếp';
     // Sân khấu đã nhận / đã đọc bao nhiêu bình luận
     const stats = (d.stageStats || []).map(s => { try { return JSON.parse(s || '{}'); } catch { return {}; } });
-    const st = stats.reduce((a, s) => { for (const k in s) if (typeof s[k] === 'number' && !/At$/.test(k)) a[k] = (a[k] || 0) + s[k]; a.lastChatAt = Math.max(a.lastChatAt || 0, s.lastChatAt || 0); return a; }, {});
+    const st = stats.reduce((a, s) => { for (const k in s) if (typeof s[k] === 'number' && !/At$|^lag/.test(k)) a[k] = (a[k] || 0) + s[k]; a.lastChatAt = Math.max(a.lastChatAt || 0, s.lastChatAt || 0); return a; }, {});
+    const lagS = stats.find(s => s.lagMc != null);
     const recvText = stats.length
       ? `Sân khấu đã nhận: 💬 <b>${st.chat || 0}</b> (đọc ${st.queued || 0}${st.dup ? ', trùng ' + st.dup : ''}${st.blocked ? ', từ cấm ' + st.blocked : ''}${st.empty ? ', rỗng/emoji ' + st.empty : ''}${st.off ? ', TẮT đọc ' + st.off : ''}) · 🎁 <b>${st.gift || 0}</b> · 👋 <b>${st.join || 0}</b>`
         + (st.unstuck ? ` · 🔧 tự gỡ kẹt ${st.unstuck}` : '')
+        + (lagS ? `<br>⏱️ Tin thật gần nhất (${lagS.lagKind === 'gift' ? 'quà' : 'bình luận'}): TikTok → máy bạn <b>${lagS.lagTt ?? '?'}s</b>, máy bạn → MC đọc <b>${lagS.lagMc}s</b>` : '')
         + (st.err ? `<br><span style="color:#c62828">⚠ Lỗi trên sân khấu (${st.err}): ${(stats.find(s => s.lastErr) || {}).lastErr || ''}</span>` : '')
       : '';
     $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng<br>Nhạc: ${musText}${recvText ? '<br>' + recvText : ''}`;

@@ -54,7 +54,7 @@ public class GiftQueueService : BackgroundService
                 // Gửi kèm thanh tình yêu sau quà này + màn diễn (hug/dance) để sân khấu diễn đúng lúc trao quà
                 await _hub.Clients.All.SendAsync("GiftReceived", new
                 {
-                    gift.UserId, gift.Nickname, gift.AvatarUrl, gift.GiftName, gift.Count, gift.DiamondValue, gift.GiftImageUrl, gift.Demo,
+                    gift.UserId, gift.Nickname, gift.AvatarUrl, gift.GiftName, gift.Count, gift.DiamondValue, gift.GiftImageUrl, gift.Demo, gift.More, gift.Ts, gift.TiktokTs,
                     Meter = meter,
                     Actions = actions
                 }, stoppingToken);
@@ -64,7 +64,7 @@ public class GiftQueueService : BackgroundService
                 _logger.LogInformation("🎁 {Nick} tặng {Count} x {Gift} ({Dia} 💎)",
                     gift.Nickname, gift.Count, gift.GiftName, gift.TotalDiamonds);
 
-                await Task.Delay(_options.CurrentValue.DispatchDelayMs, stoppingToken);
+                if (gift.Demo) await Task.Delay(_options.CurrentValue.DispatchDelayMs, stoppingToken);   // quà thật: không chờ
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
