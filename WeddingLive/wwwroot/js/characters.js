@@ -119,8 +119,24 @@
       if (!female) body.fillEllipse(-11, -99, 14, 12);
     }
 
+    // Dáng nhìn từ phía sau (chỉ khách): dùng khi đi lên sân khấu / ngồi quay lưng ở bàn tiệc
+    let back = null;
+    if (type === 'guest') {
+      const shirt = pick(SHIRTS, index);
+      const female = index % 2 === 1;
+      back = scene.add.graphics().setVisible(false);
+      if (female) back.fillStyle(shirt, 1).fillTriangle(0, -80, -24, -26, 24, -26).fillRoundedRect(-13, -80, 26, 26, 8);
+      else back.fillStyle(shirt, 1).fillRoundedRect(-18, -78, 36, 46, 10);
+      back.fillStyle(shirt, 1).fillRoundedRect(-25, -74, 8, 28, 4).fillRoundedRect(17, -74, 8, 28, 4);
+      back.fillStyle(skin, 1).fillCircle(-21, -44, 4).fillCircle(21, -44, 4);
+      back.fillStyle(skin, 1).fillCircle(-16, -91, 4).fillCircle(16, -91, 4);       // tai
+      back.fillStyle(hair, 1).fillCircle(0, -94, 17);                               // gáy tóc
+      if (female) back.fillRoundedRect(-17, -100, 34, 38, 12);                      // tóc dài
+    }
+
     if (legL) puppet.add([legL, legR]);
     puppet.add(body);
+    if (back) puppet.add(back);
 
     // Món quà cầm trên tay (ẩn khi không có)
     const gift = scene.add.text(24, -50, '', { fontFamily: FONT, fontSize: '26px' }).setOrigin(0.5);
@@ -128,7 +144,7 @@
 
     root.add([shadow, puppet]);
 
-    const person = { root, puppet, body, legL, legR, gift, walkTweens: [] };
+    const person = { root, puppet, body, back, legL, legR, gift, walkTweens: [], facing: 'front' };
     if (type === 'bride' || type === 'groom') root.setScale(1.3);
     return person;
   }
@@ -151,5 +167,13 @@
     p.puppet.y = 0;
   }
 
-  window.Chars = { FONT, makePerson, makeLabel, startWalk, stopWalk };
+  // ---------- Quay mặt: 'front' = nhìn về người xem, 'back' = quay lưng ----------
+  function setFacing(p, dir) {
+    if (!p.back || p.facing === dir) return;
+    p.facing = dir;
+    p.body.setVisible(dir === 'front');
+    p.back.setVisible(dir === 'back');
+  }
+
+  window.Chars = { FONT, makePerson, makeLabel, startWalk, stopWalk, setFacing };
 })();

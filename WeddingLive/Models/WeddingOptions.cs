@@ -14,6 +14,9 @@ public class WeddingOptions
     /// <summary>Số khách ngồi ở dưới (tối thiểu 4, tối đa 24).</summary>
     public int GuestCount { get; set; } = 12;
 
+    /// <summary>Số người ngồi ở bàn tiệc cuối thảm đỏ (0 = không có bàn, tối đa 12).</summary>
+    public int TableGuests { get; set; } = 10;
+
     /// <summary>
     /// Khóa bí mật mà bridge / TikFinity phải gửi trong header X-Api-Key (hoặc ?key=).
     /// Để trống = không kiểm tra (chỉ nên dùng khi chạy local).

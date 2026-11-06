@@ -2,7 +2,7 @@
 
 Game đám cưới chạy trên web (ASP.NET Core 8 + Phaser 3 + SignalR), kết nối với **TikTok Live**:
 
-- Cô dâu chú rể đứng trên sân khấu, **12 khách** (tùy chỉnh 4–24) ngồi ở dưới.
+- Cô dâu chú rể đứng trên sân khấu, **12 khách** (tùy chỉnh 4–24) hai bên lối đi và **bàn tiệc 10 người** (0–12) ở cuối thảm đỏ.
 - Có người **tặng quà** trên live → 1 khách **đổi tên theo người tặng**, cầm quà đi lên tặng cô dâu chú rể rồi về chỗ.
 - Quà lớn (≥ 99💎) → pháo hoa, chớp sáng, cô dâu chú rể nhảy lên.
 - **Bình luận** → khách nói bong bóng chat. **Thả tim** → tim bay. **Follow/Share** → thông báo.
@@ -84,7 +84,8 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
   "Title": "Đám Cưới Online",
   "BrideName": "Ngọc Anh",
   "GroomName": "Minh Đức",
-  "GuestCount": 12,          // 4 - 24 khách
+  "GuestCount": 12,          // 4 - 24 khách đứng hai bên lối đi
+  "TableGuests": 10,         // 0 - 12 người ngồi bàn tiệc (0 = không có bàn)
   "ApiKey": "",              // đặt khóa bí mật khi chạy trên server public
   "BigGiftDiamonds": 99,     // từ mức này trở lên bắn pháo hoa
   "DispatchDelayMs": 250     // giãn cách giữa 2 quà
