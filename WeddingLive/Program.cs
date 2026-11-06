@@ -22,6 +22,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<LeaderboardService>();
 builder.Services.AddSingleton<BridgeStatusStore>();
 builder.Services.AddSingleton<StageRegistry>();
+builder.Services.AddSingleton<LoveMeterService>();
 builder.Services.AddSingleton<GiftQueueService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<GiftQueueService>());
 

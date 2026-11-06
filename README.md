@@ -100,6 +100,23 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 2. Muốn nền trong suốt để chồng lên camera: `http://localhost:5000/?bg=0`.
 3. Live dọc 9:16: đặt Browser Source 1280×720 rồi crop/scale theo ý, hoặc sửa `W, H` trong `wwwroot/js/game.js`.
 
+## 💞 Thanh tình yêu: ôm hôn & khiêu vũ
+
+Mỗi quà cộng điểm vào **thanh tình yêu** dưới tên cô dâu chú rể (1 kim cương = 1 điểm, Rose = 1 điểm):
+
+| Mốc (cấu hình `Wedding`) | Màn diễn |
+|---|---|
+| `HugAt` (mặc định 100) | Cô dâu chú rể tiến lại gần, **ôm nhau và hôn nhẹ** 💋, tim bay |
+| `DanceAt` (mặc định 300) | Hai người **khiêu vũ** điệu valse 2 vòng, nốt nhạc bay, pháo hoa → thanh về 0, vòng mới |
+
+- Màn diễn bắt đầu đúng lúc khách trao món quà làm đầy thanh.
+- MC **khích lệ** khi thanh được 50% / 80% ("Chỉ còn 10 điểm nữa là cô dâu chú rể ôm nhau và hôn nhẹ!"),
+  có câu riêng khi ôm hôn / khiêu vũ (`Voice:MeterCheer`, `HugLines`, `DanceLines`; biến `{points}` `{left}` `{next}`).
+- Điểm lưu ở server: OBS và khung xem trước luôn khớp, F5 không mất. Nút **Reset** trong admin đưa thanh về 0.
+- Admin có nút **💋 Thử ôm hôn** / **💃 Thử khiêu vũ**.
+
+![Khiêu vũ](docs/dance.png)
+
 ## 🎙️ MC ảo (giọng đọc)
 
 Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu: khi đọc thì nhép miệng, nhún người và hiện **phụ đề** đúng câu đang đọc.
@@ -176,10 +193,12 @@ Tất cả `/api/events/*` yêu cầu header `X-Api-Key` (hoặc `?key=`) nếu 
 | POST | `/api/events/reset` | xóa bảng xếp hạng + tên khách |
 | GET | `/api/events/webhook/gift` | query `username, nickname, gift, count, coins` |
 | GET | `/api/config` | cấu hình cho sân khấu |
+| POST | `/api/events/couple` | `{ action: "hug" \| "dance" }` – thử màn diễn |
+| POST | `/api/voice/settings` | `{ speed, announceIntervalSeconds }` – lưu vào `appsettings.Local.json` |
 | GET | `/api/voice/config` | cấu hình giọng đọc + câu nói |
 | GET | `/api/tts?text=...` | trả file MP3 đọc câu đó |
 | POST | `/api/events/speak` | `{ text }` – MC đọc ngay trên sân khấu |
-| WS | `/hub/wedding` | SignalR: `GiftReceived`, `ChatReceived`, `LikeReceived`, `SocialReceived`, `Leaderboard`, `BridgeStatus`, `ResetStage`, `Speak` |
+| WS | `/hub/wedding` | SignalR: `GiftReceived`, `ChatReceived`, `LikeReceived`, `SocialReceived`, `Leaderboard`, `BridgeStatus`, `ResetStage`, `Speak`, `LoveMeter`, `CoupleAction`, `VoiceConfigChanged` |
 
 Test nhanh bằng curl:
 

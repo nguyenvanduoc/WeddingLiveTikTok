@@ -86,17 +86,28 @@ public static class LiveEndpoints
             return Results.Ok(new { queued = true });
         });
 
+        // ---- Admin: thử màn ôm hôn / khiêu vũ của cô dâu chú rể ----
+        api.MapPost("/couple", async (CoupleRequest req, IHubContext<WeddingHub> hub) =>
+        {
+            if (req.Action is not ("hug" or "dance")) return Results.BadRequest("action = hug | dance");
+            await hub.Clients.All.SendAsync("CoupleAction", new { action = req.Action });
+            return Results.Ok();
+        });
+
         // ---- Admin: xóa bảng xếp hạng + reset tên khách ----
-        api.MapPost("/reset", async (LeaderboardService lb, IHubContext<WeddingHub> hub) =>
+        api.MapPost("/reset", async (LeaderboardService lb, LoveMeterService meter, IHubContext<WeddingHub> hub) =>
         {
             lb.Clear();
             await hub.Clients.All.SendAsync("ResetStage");
+            await hub.Clients.All.SendAsync("LoveMeter", meter.Reset());
             await hub.Clients.All.SendAsync("Leaderboard", lb.Top(5));
             return Results.Ok();
         });
 
         return app;
     }
+
+    public record CoupleRequest(string? Action);
 
     private static GiftEvent Normalize(GiftEvent g) => g with
     {

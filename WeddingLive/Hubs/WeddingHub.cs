@@ -14,9 +14,11 @@ public class WeddingHub : Hub
     private readonly LeaderboardService _leaderboard;
     private readonly BridgeStatusStore _status;
     private readonly StageRegistry _stages;
+    private readonly LoveMeterService _meter;
 
-    public WeddingHub(LeaderboardService leaderboard, BridgeStatusStore status, StageRegistry stages)
+    public WeddingHub(LeaderboardService leaderboard, BridgeStatusStore status, StageRegistry stages, LoveMeterService meter)
     {
+        _meter = meter;
         _leaderboard = leaderboard;
         _status = status;
         _stages = stages;
@@ -34,6 +36,7 @@ public class WeddingHub : Hub
 
         await Clients.Caller.SendAsync("Leaderboard", _leaderboard.Top(5));
         await Clients.Caller.SendAsync("BridgeStatus", _status.Current);
+        await Clients.Caller.SendAsync("LoveMeter", _meter.Current());
         await base.OnConnectedAsync();
     }
 

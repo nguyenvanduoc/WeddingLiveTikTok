@@ -43,6 +43,9 @@ public static class VoiceEndpoints
                 BigGiftThanks = Or(o.BigGiftThanks, VoiceOptions.DefaultBigGiftThanks),
                 GiftAnnounce = Or(o.GiftAnnounce, VoiceOptions.DefaultGiftAnnounce),
                 FollowThanks = Or(o.FollowThanks, VoiceOptions.DefaultFollowThanks),
+                MeterCheer = Or(o.MeterCheer, VoiceOptions.DefaultMeterCheer),
+                HugLines = Or(o.HugLines, VoiceOptions.DefaultHugLines),
+                DanceLines = Or(o.DanceLines, VoiceOptions.DefaultDanceLines),
                 GiftNames = giftNames
             });
         });

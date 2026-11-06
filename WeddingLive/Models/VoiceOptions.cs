@@ -51,6 +51,13 @@ public class VoiceOptions
     public List<string>? GiftAnnounce { get; set; }
     public List<string>? FollowThanks { get; set; }
 
+    /// <summary>Khích lệ khi thanh tình yêu được 50% / 80%. Biến: {points} {left} {next}.</summary>
+    public List<string>? MeterCheer { get; set; }
+    /// <summary>Đọc khi cô dâu chú rể ôm nhau + hôn nhẹ.</summary>
+    public List<string>? HugLines { get; set; }
+    /// <summary>Đọc khi cô dâu chú rể khiêu vũ.</summary>
+    public List<string>? DanceLines { get; set; }
+
     /// <summary>Tên quà TikTok (tiếng Anh) -> cách đọc tiếng Việt.</summary>
     public Dictionary<string, string>? GiftNames { get; set; }
 
@@ -71,7 +78,9 @@ public class VoiceOptions
         "Cô dâu {bride} hôm nay thật xinh đẹp, chú rể {groom} thật bảnh bao. Quý vị thấy có đẹp đôi không nào?",
         "Bình luận lời chúc của bạn, khách mời sẽ đọc to lời chúc đó ngay trên màn hình!",
         "Quà càng lớn, pháo hoa càng rực rỡ. Cùng làm sáng bừng lễ cưới của {bride} và {groom} nhé!",
-        "Chúc cho {bride} và {groom} luôn yêu thương, nhường nhịn và sớm có tin vui!"
+        "Chúc cho {bride} và {groom} luôn yêu thương, nhường nhịn và sớm có tin vui!",
+        "Thanh tình yêu đang có {points} điểm. Còn {left} điểm nữa là {next}. Tặng quà để xem nhé!",
+        "Quý vị muốn xem cô dâu chú rể ôm hôn và khiêu vũ không? Hãy tặng quà để làm đầy thanh tình yêu nào!"
     };
 
     public static readonly string[] DefaultGiftThanks =
@@ -101,6 +110,26 @@ public class VoiceOptions
     {
         "Cảm ơn {name} đã theo dõi kênh!",
         "Chào mừng {name} đã đến chung vui cùng cô dâu chú rể!"
+    };
+
+    public static readonly string[] DefaultMeterCheer =
+    {
+        "Chỉ còn {left} điểm nữa là {next}! Tặng quà ngay nào quý vị ơi!",
+        "Cố lên nào, thêm {left} điểm nữa thôi là {next}!",
+        "Thanh tình yêu đã được {points} điểm rồi! Còn {left} điểm nữa là {next}. Ai giúp cô dâu chú rể nào?",
+        "Một bông hồng là một điểm cho thanh tình yêu. Còn {left} điểm nữa là {next}!"
+    };
+
+    public static readonly string[] DefaultHugLines =
+    {
+        "Ôi ngọt ngào quá! Cô dâu chú rể đã ôm nhau và trao nhau nụ hôn nhẹ! Cảm ơn quý vị đã tặng quà!",
+        "Thanh tình yêu đã đủ! {bride} và {groom} ôm nhau thật tình cảm! Thêm {left} điểm nữa là hai bạn sẽ khiêu vũ đó nha!"
+    };
+
+    public static readonly string[] DefaultDanceLines =
+    {
+        "Tuyệt vời! Thanh tình yêu đã đầy! Xin mời cô dâu {bride} và chú rể {groom} cùng nhảy điệu valse tình yêu!",
+        "Âm nhạc lên nào! Cô dâu chú rể khiêu vũ rồi! Xin một tràng pháo tay thật lớn và cảm ơn tất cả quý vị đã tặng quà!"
     };
 
     public static readonly Dictionary<string, string> DefaultGiftNames = new(StringComparer.OrdinalIgnoreCase)

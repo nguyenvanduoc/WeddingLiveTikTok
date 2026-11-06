@@ -32,6 +32,12 @@ public class WeddingOptions
     /// <summary>Quà có tổng kim cương từ mức này trở lên sẽ bắn pháo hoa.</summary>
     public int BigGiftDiamonds { get; set; } = 99;
 
+    /// <summary>Thanh tình yêu: đủ bao nhiêu điểm (kim cương) thì cô dâu chú rể ôm nhau + hôn nhẹ.</summary>
+    public int HugAt { get; set; } = 100;
+
+    /// <summary>Thanh tình yêu: đủ bao nhiêu điểm thì hai người khiêu vũ (rồi thanh về 0, vòng mới).</summary>
+    public int DanceAt { get; set; } = 300;
+
     /// <summary>Thời gian giãn cách (ms) giữa 2 sự kiện quà gửi xuống trình duyệt.</summary>
     public int DispatchDelayMs { get; set; } = 250;
 }

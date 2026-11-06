@@ -14,6 +14,7 @@
     let playing = false, locked = false;
     let lastSpoke = performance.now() - 1e9;     // mở trang là MC chào ngay
     let topGifter = '';                          // người tặng nhiều nhất (cho câu dẫn có {top1})
+    let meter = null;                            // thanh tình yêu: { points, left, next }
     let onSpeak = () => { }, onSilent = () => { };   // nhân vật MC: nhép miệng + phụ đề
     let announceIndex = 0;
     let isStageBusy = () => false;
@@ -25,7 +26,10 @@
 
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const fill = (tpl, data) => tpl.replace(/\{(\w+)\}/g, (_, k) => data[k] ?? '');
-    const base = () => ({ bride: wedding.brideName, groom: wedding.groomName, top1: topGifter });
+    const base = () => ({
+      bride: wedding.brideName, groom: wedding.groomName, top1: topGifter,
+      points: meter?.points ?? '', left: meter?.left ?? '', next: meter?.next ?? ''
+    });
     const giftData = (g) => ({ ...base(), name: cleanName(g.nickname), count: g.count, gift: giftName(g.giftName) });
 
     // Tên TikTok hay có emoji/ký hiệu => bỏ đi cho dễ đọc
@@ -151,6 +155,7 @@
       for (let tries = 0; tries < list.length; tries++) {
         const tpl = list[announceIndex++ % list.length];
         if (tpl.includes('{top1}') && !topGifter) continue;
+        if (/\{(left|points|next)\}/.test(tpl) && !meter) continue;
         enqueue(fill(tpl, base()), 0);
         break;
       }
@@ -171,6 +176,17 @@
       get silent() { return MUTED_BY_URL || !cfg.enabled; },
       /** MC: gọi khi bắt đầu nói (kèm câu đang nói) và khi im lặng. */
       onSpeech(start, end) { onSpeak = start; onSilent = end; },
+      /** Cập nhật thanh tình yêu: { points, left, next } (dùng cho {points} {left} {next}). */
+      setMeter(m) { meter = m; },
+      /** Khích lệ người xem tặng quà (khi thanh tình yêu được 50% / 80%). */
+      cheer() {
+        if (cfg.meterCheer?.length && queue.length < 4) enqueue(fill(pick(cfg.meterCheer), base()), 1);
+      },
+      /** Cô dâu chú rể ôm hôn ('hug') / khiêu vũ ('dance'). */
+      coupleAction(a) {
+        const list = a === 'dance' ? cfg.danceLines : cfg.hugLines;
+        if (list?.length) enqueue(fill(pick(list), base()), 2.5);
+      },
       /** Cập nhật người tặng nhiều nhất (bảng xếp hạng). */
       setTopGifter(name) { topGifter = name ? cleanName(name) : ''; },
       /** Khách bắt đầu lên sân khấu: đọc tên người tặng + quà gì (mỗi quà 1 câu). */

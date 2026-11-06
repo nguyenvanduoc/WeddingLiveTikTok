@@ -23,12 +23,14 @@ public class GiftQueueService : BackgroundService
 
     private readonly IHubContext<WeddingHub> _hub;
     private readonly LeaderboardService _leaderboard;
+    private readonly LoveMeterService _meter;
     private readonly IOptionsMonitor<WeddingOptions> _options;
     private readonly ILogger<GiftQueueService> _logger;
 
-    public GiftQueueService(IHubContext<WeddingHub> hub, LeaderboardService leaderboard,
+    public GiftQueueService(IHubContext<WeddingHub> hub, LeaderboardService leaderboard, LoveMeterService meter,
         IOptionsMonitor<WeddingOptions> options, ILogger<GiftQueueService> logger)
     {
+        _meter = meter;
         _hub = hub;
         _leaderboard = leaderboard;
         _options = options;
@@ -48,7 +50,16 @@ public class GiftQueueService : BackgroundService
             try
             {
                 _leaderboard.Add(gift);
-                await _hub.Clients.All.SendAsync("GiftReceived", gift, stoppingToken);
+                var (meter, actions) = _meter.Add(gift.TotalDiamonds);
+                // Gửi kèm thanh tình yêu sau quà này + màn diễn (hug/dance) để sân khấu diễn đúng lúc trao quà
+                await _hub.Clients.All.SendAsync("GiftReceived", new
+                {
+                    gift.UserId, gift.Nickname, gift.AvatarUrl, gift.GiftName, gift.Count, gift.DiamondValue,
+                    Meter = meter,
+                    Actions = actions
+                }, stoppingToken);
+                if (actions.Length > 0)
+                    _logger.LogInformation("💞 Thanh tình yêu: {Actions}", string.Join(", ", actions));
                 await _hub.Clients.All.SendAsync("Leaderboard", _leaderboard.Top(5), stoppingToken);
                 _logger.LogInformation("🎁 {Nick} tặng {Count} x {Gift} ({Dia} 💎)",
                     gift.Nickname, gift.Count, gift.GiftName, gift.TotalDiamonds);

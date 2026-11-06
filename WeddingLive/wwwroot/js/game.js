@@ -52,6 +52,10 @@
     create() {
       this.guests = [];
       this.queue = [];                 // quà đang chờ khách rảnh
+      this.coupleQueue = [];           // màn diễn của cô dâu chú rể chờ diễn: 'hug' | 'dance'
+      this.coupleBusy = false;
+      this.meterSeq = -1;
+      this.pendingMeter = null;
       this.slots = [                   // vị trí đứng tặng quà: cạnh cô dâu, cạnh chú rể, chính giữa phía trước
         { x: CENTER_X - 170, y: 365, busy: false },
         { x: CENTER_X + 170, y: 365, busy: false },
@@ -302,6 +306,7 @@
       this.add.text(CENTER_X, 30, `${cfg.brideName} 💍 ${cfg.groomName}`, {
         fontFamily: FONT, fontSize: '34px', fontStyle: 'bold', color: '#ffffff', stroke: '#c9184a', strokeThickness: 6
       }).setOrigin(0.5, 0).setDepth(900);
+      this.drawLoveMeter();
 
       // Bảng hướng dẫn (trái)
       const info = this.add.container(20, 20).setDepth(900);
@@ -321,6 +326,136 @@
       lb.add(this.lbText);
 
       this.toasts = [];
+    }
+
+    // =================================================================
+    //  THANH TÌNH YÊU: đủ HugAt điểm => ôm hôn, đủ DanceAt => khiêu vũ
+    // =================================================================
+    drawLoveMeter() {
+      const w = 380, h = 16, y = 90, x0 = CENTER_X - w / 2;
+      this.meter = { w, h, y, x0, shown: 0, data: null };
+      const c = this.add.container(0, 0).setDepth(900);
+      const bg = this.add.graphics().fillStyle(0x000000, 0.45).fillRoundedRect(x0 - 4, y - h / 2 - 4, w + 8, h + 8, (h + 8) / 2);
+      this.meterFill = this.add.graphics();
+      this.meterHugIcon = this.add.text(x0 + w / 3, y, '💋', { fontFamily: FONT, fontSize: '18px' }).setOrigin(0.5);
+      const end = this.add.text(x0 + w + 4, y, '💃', { fontFamily: FONT, fontSize: '20px' }).setOrigin(0.5);
+      this.meterText = this.add.text(CENTER_X, y + 21, '💗 Thanh tình yêu', {
+        fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: '#ffffff', stroke: '#c9184a', strokeThickness: 4
+      }).setOrigin(0.5);
+      c.add([bg, this.meterFill, this.meterHugIcon, end, this.meterText]);
+    }
+
+    drawMeterFill() {
+      const { w, h, y, x0, shown, data } = this.meter;
+      const f = data ? Phaser.Math.Clamp(shown / data.danceAt, 0, 1) : 0;
+      this.meterFill.clear();
+      if (f > 0) this.meterFill.fillStyle(0xff4d6d, 1).fillRoundedRect(x0, y - h / 2, Math.max(h, w * f), h, h / 2)
+        .fillStyle(0xffffff, 0.25).fillRoundedRect(x0 + 4, y - h / 2 + 3, Math.max(h, w * f) - 8, 4, 2);
+      if (data) this.meterFill.fillStyle(0xffffff, 0.8).fillRect(x0 + w * data.hugAt / data.danceAt - 1, y - h / 2, 2, h);
+    }
+
+    /** Cập nhật thanh tình yêu (m = ảnh chụp từ server). cheer = cho MC khích lệ khi vượt 50% / 80%. */
+    onMeter(m, cheer = true) {
+      if (!m || m.seq <= this.meterSeq) return;              // bỏ bản cũ hơn bản đang hiện
+      const prev = this.meter.data;
+      this.meterSeq = m.seq;
+      this.meter.data = m;
+      const target = m.hugged ? m.danceAt : m.hugAt;
+      const left = Math.max(0, target - m.points);
+      const next = m.hugged ? 'cô dâu chú rể nhảy khiêu vũ' : 'cô dâu chú rể ôm nhau và hôn nhẹ';
+      this.meterHugIcon.setX(this.meter.x0 + this.meter.w * m.hugAt / m.danceAt);
+      this.meterText.setText(`💗 Thanh tình yêu ${m.points}/${m.danceAt} · còn ${left} điểm → ${m.hugged ? '💃 khiêu vũ' : '💋 ôm hôn'}`);
+      this.tweens.add({ targets: this.meter, shown: m.points, duration: 600, onUpdate: () => this.drawMeterFill() });
+      voice.setMeter({ points: m.points, left, next });
+      // Khích lệ khi vượt 50% / 80% quãng tới mốc kế tiếp
+      if (cheer && prev && prev.hugged === m.hugged && prev.rounds === m.rounds) {
+        const from = m.hugged ? m.hugAt : 0, span = target - from;
+        const r0 = (prev.points - from) / span, r1 = (m.points - from) / span;
+        if ([0.5, 0.8].some(t => r0 < t && r1 >= t)) voice.cheer();
+      }
+    }
+
+    // ---------------- Cô dâu chú rể: ôm hôn / khiêu vũ ----------------
+    queueCouple(action) {
+      this.coupleQueue.push(action);
+      this.runCouple();
+    }
+
+    runCouple() {
+      if (this.coupleBusy || !this.coupleQueue.length) return;
+      const action = this.coupleQueue.shift();
+      this.coupleBusy = true;
+      voice.coupleAction(action);
+      const done = () => {
+        this.coupleBusy = false;
+        if (action === 'dance' && this.pendingMeter) { this.onMeter(this.pendingMeter, false); this.pendingMeter = null; }
+        this.runCouple();
+      };
+      if (action === 'dance') this.doDance(done); else this.doHug(done);
+    }
+
+    doHug(done) {
+      const B = this.bride.root, G = this.groom.root, y0 = 340;
+      // Tiến lại gần nhau
+      this.tweens.add({ targets: B, x: CENTER_X - 24, duration: 600, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: G, x: CENTER_X + 24, duration: 600, ease: 'Sine.inOut' });
+      this.after(600, () => {
+        // Nghiêng đầu vào nhau + nụ hôn
+        this.tweens.add({ targets: B, angle: 9, duration: 300, ease: 'Sine.out' });
+        this.tweens.add({ targets: G, angle: -9, duration: 300, ease: 'Sine.out' });
+        this.after(300, () => {
+          const kiss = this.add.text(CENTER_X, y0 - 182, '💋', { fontFamily: FONT, fontSize: '30px' })   // ngay trên 2 đầu, không che mặt
+            .setOrigin(0.5).setDepth(980).setScale(0);
+          this.tweens.add({ targets: kiss, scale: 1.2, duration: 300, ease: 'Back.out', yoyo: true, hold: 1100, onComplete: () => kiss.destroy() });
+          this.hearts.explode(40, CENTER_X, y0 - 175);
+          this.after(800, () => this.hearts.explode(25, CENTER_X, y0 - 185));
+        });
+      });
+      // Tách ra về chỗ
+      this.after(3000, () => {
+        this.tweens.add({ targets: [B, G], angle: 0, duration: 300 });
+        this.tweens.add({ targets: B, x: CENTER_X - 60, duration: 600, delay: 200, ease: 'Sine.inOut' });
+        this.tweens.add({ targets: G, x: CENTER_X + 60, duration: 600, delay: 200, ease: 'Sine.inOut', onComplete: done });
+      });
+    }
+
+    doDance(done) {
+      const B = this.bride.root, G = this.groom.root, cx = CENTER_X, y0 = 340, R = 46;
+      this.celebrate();
+      // Nốt nhạc, tim, lấp lánh bay quanh
+      let alive = true;
+      const spawn = () => {
+        if (!alive) return;
+        const t = this.add.text(cx + Phaser.Math.Between(-170, 170), y0 - Phaser.Math.Between(30, 170),
+          Phaser.Utils.Array.GetRandom(['🎵', '🎶', '💕', '✨', '🎵']), { fontFamily: FONT, fontSize: Phaser.Math.Between(18, 30) + 'px' })
+          .setOrigin(0.5).setDepth(960);
+        this.tweens.add({ targets: t, y: t.y - 80, alpha: 0, duration: 1600, onComplete: () => t.destroy() });
+        this.after(220, spawn);
+      };
+      spawn();
+      // Vào vị trí rồi xoay vòng (điệu valse), người nghiêng qua lại theo nhịp
+      this.tweens.add({ targets: B, x: cx - R, duration: 500 });
+      this.tweens.add({ targets: G, x: cx + R, duration: 500 });
+      this.after(500, () => this.tweens.addCounter({
+        from: 0, to: 1, duration: 8000,
+        onUpdate: (tw) => {
+          const v = tw.getValue(), a = Math.PI + v * Math.PI * 4;      // 2 vòng
+          B.x = cx + Math.cos(a) * R; B.y = y0 + Math.sin(a) * 14;
+          G.x = cx - Math.cos(a) * R; G.y = y0 - Math.sin(a) * 14;
+          const sway = Math.sin(v * Math.PI * 16) * 8;
+          B.angle = sway; G.angle = -sway;
+          B.setDepth(B.y); G.setDepth(G.y);
+        },
+        onComplete: () => {
+          alive = false;
+          B.angle = 0; G.angle = 0;
+          this.tweens.add({ targets: B, x: cx - 60, y: y0, duration: 600 });
+          this.tweens.add({
+            targets: G, x: cx + 60, y: y0, duration: 600,
+            onComplete: () => { B.setDepth(340); G.setDepth(340); this.celebrate(); done(); }
+          });
+        }
+      }));
     }
 
     makeEffects() {
@@ -361,7 +496,11 @@
     onGift(gift) {
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
-      if (same) same.count += gift.count;
+      if (same) {
+        same.count += gift.count;
+        if (gift.meter && (!same.meter || gift.meter.seq > same.meter.seq)) same.meter = gift.meter;
+        same.actions = [...(same.actions || []), ...(gift.actions || [])];
+      }
       else if (isBig(gift)) this.queue.unshift(gift);      // quà lớn được ưu tiên
       else this.queue.push(gift);
       this.processQueue();
@@ -462,6 +601,13 @@
         onComplete: () => {
           if (countTxt) this.tweens.add({ targets: countTxt, alpha: 1, duration: 200 });
           this.hearts.explode(big ? 50 : 18, tx, ty + 10);
+          // Thanh tình yêu: quà làm đầy thanh => hiện đầy, khiêu vũ xong mới về 0
+          const acts = gift.actions || [];
+          if (acts.includes('dance')) {
+            this.pendingMeter = gift.meter;
+            this.tweens.add({ targets: this.meter, shown: this.meter.data?.danceAt ?? 0, duration: 600, onUpdate: () => this.drawMeterFill() });
+          } else this.onMeter(gift.meter);
+          acts.forEach(a => this.queueCouple(a));
           this.coupleHappy(big);
           this.banner(`${emoji} ${gift.nickname} tặng ${gift.count > 1 ? gift.count + ' ' : ''}${gift.giftName}`, big);
           voice.thankGift(gift, big);
@@ -476,6 +622,7 @@
     }
 
     coupleHappy(big) {
+      if (this.coupleBusy) return;                     // đang ôm hôn / khiêu vũ thì không nhảy lên
       [this.bride, this.groom].forEach((p, i) => this.tweens.add({
         targets: p.root, y: 340 - (big ? 28 : 14), duration: 180, yoyo: true, repeat: big ? 2 : 0, delay: i * 90, ease: 'Quad.out'
       }));
@@ -493,7 +640,7 @@
       this.bannerObj?.destroy();
       const b = makeLabel(this, text, {
         fontSize: big ? '26px' : '22px', bg: big ? 0x7b2cbf : 0xc9184a, bgAlpha: 0.92, stroke: 0xffd166
-      }).setPosition(CENTER_X, 118).setDepth(990).setScale(0);
+      }).setPosition(CENTER_X, 142).setDepth(990).setScale(0);
       this.bannerObj = b;
       this.tweens.add({ targets: b, scale: 1, duration: 300, ease: 'Back.out' });
       this.tweens.add({ targets: b, alpha: 0, delay: 2800, duration: 400, onComplete: () => b.destroy() });
@@ -573,6 +720,8 @@
       conn.on('ResetStage', () => this.onReset());
       conn.on('Speak', e => voice.speakNow(e.text));
       conn.on('VoiceConfigChanged', () => voice.load());   // đổi tốc độ ở admin => áp dụng ngay
+      conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset
+      conn.on('CoupleAction', a => this.queueCouple(a.action));   // admin bấm thử
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 
       // Báo trạng thái giọng về server (trang admin hiển thị để chẩn đoán)
