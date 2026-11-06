@@ -25,7 +25,9 @@ public static class LiveEndpoints
             GuestCount = Math.Clamp(o.CurrentValue.GuestCount, 0, 24),
             Tables = Math.Clamp(o.CurrentValue.Tables, 0, 5),
             GuestsPerTable = Math.Clamp(o.CurrentValue.GuestsPerTable, 4, 12),
-            o.CurrentValue.BigGiftDiamonds
+            o.CurrentValue.BigGiftDiamonds,
+            GiftPacingMs = Math.Clamp(o.CurrentValue.GiftPacingMs, 0, 10000),
+            WalkSpeed = Math.Clamp(o.CurrentValue.WalkSpeed, 80, 600)
         }));
 
         var api = app.MapGroup("/api/events").AddEndpointFilter<ApiKeyFilter>();

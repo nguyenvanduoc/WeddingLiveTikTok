@@ -38,6 +38,12 @@ public class WeddingOptions
     /// <summary>Thanh tình yêu: đủ bao nhiêu điểm thì hai người khiêu vũ (rồi thanh về 0, vòng mới).</summary>
     public int DanceAt { get; set; } = 300;
 
+    /// <summary>Khoảng cách tối thiểu (ms) giữa 2 khách lần lượt đứng dậy lên tặng quà. Lớn = thong thả hơn.</summary>
+    public int GiftPacingMs { get; set; } = 1500;
+
+    /// <summary>Tốc độ đi của khách (pixel/giây). Nhỏ = đi chậm hơn.</summary>
+    public int WalkSpeed { get; set; } = 240;
+
     /// <summary>Thời gian giãn cách (ms) giữa 2 sự kiện quà gửi xuống trình duyệt.</summary>
     public int DispatchDelayMs { get; set; } = 250;
 }

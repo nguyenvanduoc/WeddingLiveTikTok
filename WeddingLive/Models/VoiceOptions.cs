@@ -29,7 +29,7 @@ public class VoiceOptions
     public string GoogleCloudVoice { get; set; } = "vi-VN-Neural2-A";
 
     /// <summary>Tốc độ đọc: 1.0 = bình thường, 1.5 = nhanh 1,5 lần, 3.0 = nhanh gấp 3 (0.5 - 3.0). Áp dụng cho mọi giọng.</summary>
-    public double Speed { get; set; } = 2.5;
+    public double Speed { get; set; } = 2.0;
 
     public double ClampedSpeed => Math.Clamp(Speed <= 0 ? 1 : Speed, 0.5, 3.0);
 

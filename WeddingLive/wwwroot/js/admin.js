@@ -24,6 +24,7 @@
   }
 
   const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').replace(/\s+/g, '').toLowerCase();
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
   function giftFrom(nick, value, count) {
@@ -42,8 +43,8 @@
   const actions = {
     gift: async () => { const g = giftFrom($('nick').value || 'Ẩn danh', $('gift').value, $('count').value);
                         if (await post('gift', g)) log(`🎁 ${g.nickname} tặng ${g.count} ${g.giftName}`); },
-    random10: async () => { for (let i = 0; i < 10; i++) await post('gift', randomGift()); log('🎁 Đã gửi 10 quà ngẫu nhiên'); },
-    spam50: async () => { await Promise.all(Array.from({ length: 50 }, () => post('gift', randomGift()))); log('🎁 Đã spam 50 quà'); },
+    random10: async () => { log('🎁 Đang gửi 10 quà (mỗi 0,8s)…'); for (let i = 0; i < 10; i++) { await post('gift', randomGift()); await sleep(800); } log('🎁 Đã gửi 10 quà ngẫu nhiên'); },
+    spam50: async () => { log('🎁 Đang spam 50 quà (mỗi 0,3s)…'); for (let i = 0; i < 50; i++) { await post('gift', randomGift()); await sleep(300); } log('🎁 Đã spam 50 quà'); },
     chat: async () => { const n = $('nick').value || 'Ẩn danh';
                         if (await post('chat', { userId: slug(n), nickname: n, comment: $('comment').value })) log(`💬 ${n}: ${$('comment').value}`); },
     like: async () => { await post('like', { userId: 'x', nickname: rnd(NAMES), likeCount: 10 }); log('❤️ +10 tim'); },

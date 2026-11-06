@@ -45,7 +45,7 @@ Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
 ### 🧪 Chế độ DEMO (test không cần live)
 
 Chưa điền `TIKTOK_USERNAME` trong `tiktok-bridge/.env` (file tự tạo lần đầu chạy) → bridge tự tạo **quà, bình luận, tim, follow giả**
-khoảng mỗi 5 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
+khoảng mỗi 9 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
 Đặt `DEMO=true` để luôn chạy demo, `DEMO_INTERVAL_MS` để chỉnh nhịp.
 
 ## Chạy thử (không cần live)
@@ -131,7 +131,7 @@ Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu:
   bỏ emoji, bỏ bình luận có link / toàn emoji, cắt câu dài hơn `MaxChatLength`.
   **Từ cấm** `Voice:BannedWords`: có từ cấm thì không đọc và không hiện bong bóng (từ ≤ 3 ký tự so nguyên từ để không chặn nhầm "admin", "vlog").
   Tắt đọc bình luận: `"ReadChat": false`. Mẫu câu: `Voice:ChatTemplates` (`{name}` `{comment}`).
-- Tốc độ mặc định **x2.5** (`Voice:Speed`, 0.5 – 3.0), kéo thanh trượt trong admin để đổi ngay.
+- Tốc độ mặc định **x2** (`Voice:Speed`, 0.5 – 3.0), kéo thanh trượt trong admin để đổi ngay.
 
 **Live bằng TikTok LIVE Studio:** bấm đúp `open-stage.bat` → mở sân khấu trong cửa sổ Chrome/Edge riêng **được tự phát âm thanh**
 (không cần bấm 🔊) → trong LIVE Studio thêm *Window capture* chọn cửa sổ đó và bật thu âm thanh hệ thống / desktop audio.
@@ -146,7 +146,7 @@ Giọng đọc (`Voice:Provider`):
 | `googlecloud` | Google Cloud Text-to-Speech – giọng `vi-VN-Neural2-A` (nữ) / `vi-VN-Neural2-D` (nam), `vi-VN-Wavenet-A..D`. Cần API key (console.cloud.google.com → bật *Cloud Text-to-Speech API* → Credentials → API key), điền `GoogleCloudKey` |
 | `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
 
-**Tốc độ đọc:** `Voice:Speed` (mặc định `2.5`; `1.0` bình thường; `1.5` vừa phải; tối đa `3.0`). Chỉnh nhanh bằng **thanh trượt tốc độ** trong trang admin (lưu vào `appsettings.Local.json`, áp dụng ngay). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
+**Tốc độ đọc:** `Voice:Speed` (mặc định `2.0`; `1.0` bình thường; `1.5` vừa phải; tối đa `3.0`). Chỉnh nhanh bằng **thanh trượt tốc độ** trong trang admin (lưu vào `appsettings.Local.json`, áp dụng ngay). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
 giọng Google miễn phí thì trình duyệt phát nhanh hơn mà vẫn giữ cao độ.
 Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng tạm giọng Google miễn phí, trang admin hiện lý do.
 
@@ -178,7 +178,9 @@ cách đọc tên quà ở `Voice:GiftNames` (ví dụ `"Rose": "bông hồng"`)
   "GuestsPerTable": 10,      // khách ngồi mỗi bàn 4 - 12
   "ApiKey": "",              // đặt khóa bí mật khi chạy trên server public
   "BigGiftDiamonds": 99,     // từ mức này trở lên bắn pháo hoa
-  "DispatchDelayMs": 250     // giãn cách giữa 2 quà
+  "DispatchDelayMs": 250,    // giãn cách giữa 2 quà gửi xuống sân khấu
+  "GiftPacingMs": 1500,      // 2 khách lần lượt lên tặng cách nhau ít nhất 1,5s (tăng nếu thấy dồn dập)
+  "WalkSpeed": 240           // tốc độ đi của khách (pixel/giây)
 }
 ```
 

@@ -12,7 +12,7 @@
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 1500, walkSpeed: 240 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -508,10 +508,17 @@
 
     processQueue() {
       while (this.queue.length) {
+        // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
+        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 1500) - performance.now();
+        if (wait > 0) {
+          if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
+          break;
+        }
         const slot = this.slots.find(s => !s.busy);
         const guest = this.pickGuest(this.queue[0].userId);
         if (!slot || !guest) break;
         this.sendGuest(guest, slot, this.queue.shift());
+        this.lastSend = performance.now();
       }
       this.queueText.setText(this.queue.length ? `⏳ Đang chờ lên sân khấu: ${this.queue.length}` : '');
     }
@@ -540,7 +547,7 @@
       voice.announceGift(gift);                    // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
 
       // Hàng đợi dài => đi nhanh hơn
-      const speed = 300 * (1 + Math.min(this.queue.length, 10) * 0.12);
+      const speed = (cfg.walkSpeed || 240) * (1 + Math.min(this.queue.length, 8) * 0.05);   // quà dồn nhiều: nhanh thêm tối đa 40%
       const pathUp = [...guest.path, { x: slot.x, y: slot.y }];
       const pathBack = [...guest.path].reverse().concat({ x: guest.homeX, y: guest.homeY });
 
@@ -616,7 +623,7 @@
             targets: [fly, countTxt].filter(Boolean), alpha: 0, y: '-=40', delay: 900, duration: 500,
             onComplete: () => { fly.destroy(); countTxt?.destroy(); }
           });
-          this.after(big ? 1400 : 800, onDone);
+          this.after(big ? 1800 : 1200, onDone);       // đứng trao quà lâu hơn chút cho thong thả
         }
       });
     }
