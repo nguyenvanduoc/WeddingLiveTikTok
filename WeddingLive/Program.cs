@@ -57,6 +57,9 @@ app.MapVoiceEndpoints();
     var hub = app.Services.GetRequiredService<IHubContext<WeddingHub>>();
     app.Services.GetRequiredService<IOptionsMonitor<VoiceOptions>>()
         .OnChange((_, _) => hub.Clients.All.SendAsync("VoiceConfigChanged"));
+    // Nhịp sân khấu đổi (thanh trượt admin / sửa file) => sân khấu nạp lại cấu hình ngay
+    app.Services.GetRequiredService<IOptionsMonitor<WeddingOptions>>()
+        .OnChange((_, _) => hub.Clients.All.SendAsync("StageConfigChanged"));
 }
 app.MapGet("/health", () => Results.Ok("OK"));
 

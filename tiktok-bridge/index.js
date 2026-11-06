@@ -213,7 +213,7 @@ function startLive() {
 }
 
 if (DEMO) {
-  runDemo({ post, server: SERVER, intervalMs: Number(process.env.DEMO_INTERVAL_MS) || 9000 });
+  runDemo({ post, server: SERVER, intervalMs: Number(process.env.DEMO_INTERVAL_MS) || 15000 });
 } else {
   startLive();
 }

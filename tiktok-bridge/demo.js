@@ -65,7 +65,7 @@ function weightedGift() {
   return GIFTS[between(0, 9)];
 }
 
-export function runDemo({ post, server, intervalMs = 9000 }) {
+export function runDemo({ post, server, intervalMs = 15000 }) {
   console.log('==================================================');
   console.log('🧪 CHẾ ĐỘ DEMO – chưa điền TIKTOK_USERNAME trong tiktok-bridge/.env');
   console.log(`   Tự tạo quà/bình luận giả khoảng mỗi ${intervalMs / 1000}s và gửi tới ${server}`);

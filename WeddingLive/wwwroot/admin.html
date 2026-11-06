@@ -77,6 +77,16 @@
       <div class="row"><button data-act="diagnose" class="alt">🩺 Kiểm tra giọng</button></div>
       <pre id="diag" hidden></pre>
 
+      <h2>🐢 Nhịp quà trên sân khấu</h2>
+      <label class="speed">Khách lên tặng cách nhau: <b id="paceVal">?</b>
+        <input id="pace" type="range" min="1" max="8" step="0.5" value="3">
+        <span class="ticks"><span>1s (nhanh)</span><span>4s</span><span>8s (thong thả)</span></span>
+      </label>
+      <label class="speed">Khi vắng, khách mời tự hoạt động mỗi: <b id="idleVal">?</b>
+        <input id="idleEvery" type="range" min="4" max="30" step="1" value="8">
+        <span class="ticks"><span>4s</span><span>15s</span><span>30s</span></span>
+      </label>
+
       <h2>💞 Cô dâu chú rể</h2>
       <div class="row">
         <button data-act="hug" class="alt">💋 Thử ôm hôn</button>

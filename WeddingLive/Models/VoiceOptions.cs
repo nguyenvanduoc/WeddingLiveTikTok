@@ -155,6 +155,10 @@ public class VoiceOptions
 
     public static readonly string[] DefaultIdleLines =
     {
+        "Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!",
+        "Cả nhà ơi, tặng một bông hồng để chúc mừng {bride} và {groom} đi mọi người!",
+        "Sân khấu đang chờ quý vị đó! Hãy tặng gì đó để chúc mừng cô dâu chú rể nhé!",
+        "Mỗi món quà là một lời chúc phúc. Mọi người tặng quà chúc mừng cô dâu chú rể đi nào!",
         "Khách mời đang lên chúc mừng cô dâu chú rể. Quý vị trên live tặng một bông hồng là cũng được mời lên sân khấu đó!",
         "Bà con cô bác đang chúc phúc rộn ràng! Bạn ơi, bình luận lời chúc của bạn để MC đọc to lên nhé!",
         "Không khí tiệc cưới đang rất vui! Thả tim cho cô dâu chú rể nào quý vị ơi!",

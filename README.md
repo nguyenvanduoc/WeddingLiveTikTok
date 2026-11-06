@@ -45,7 +45,7 @@ Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
 ### 🧪 Chế độ DEMO (test không cần live)
 
 Chưa điền `TIKTOK_USERNAME` trong `tiktok-bridge/.env` (file tự tạo lần đầu chạy) → bridge tự tạo **quà, bình luận, tim, follow giả**
-khoảng mỗi 9 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
+khoảng mỗi 15 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
 Đặt `DEMO=true` để luôn chạy demo, `DEMO_INTERVAL_MS` để chỉnh nhịp.
 
 ## Chạy thử (không cần live)
@@ -103,7 +103,7 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 ## 🎉 Sân khấu tự sinh động khi vắng (ưu tiên dữ liệu TikTok)
 
 Mới live ít người: sau `IdleAfterSeconds` (6s) không có quà / bình luận / follow thật, **khách mời trong tiệc tự hoạt động**
-khoảng mỗi `IdleEverySeconds` (4s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
+khoảng mỗi `IdleEverySeconds` (8s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
 MC mời gọi người xem (`Voice:IdleLines`).
 
 - Mỗi lượt khách mời mang **tên vai trong tiệc** (Bác Tư, Cô Hoa, Bạn thân cô dâu, Đồng nghiệp chú rể…) với **nhãn tím** và **quà truyền thống** khác nhau (🧧 phong bì, 🍾 rượu, 🎂 bánh cưới, 🧸 gấu bông…), không lặp gần nhau; MC: "Bác Tư lên trao phong bì mừng cô dâu chú rể!" (`Voice:NpcLines`).
@@ -111,6 +111,10 @@ MC mời gọi người xem (`Voice:IdleLines`).
   không dùng khách đang mang tên người tặng thật.
 - **Ưu tiên TikTok**: có quà / bình luận thật là dừng ngay; khi còn quà chờ thì không chạy; luôn chừa ≥ 2 chỗ trên sân khấu.
 - Tắt: `"IdleActivity": false` (mục `Wedding`).
+
+**Nhịp quà**: trang admin → mục **🐢 Nhịp quà trên sân khấu** có 2 thanh trượt (khách lên tặng cách nhau 1–8 giây;
+khách mời tự hoạt động mỗi 4–30 giây), áp dụng ngay không cần F5 (lưu vào `appsettings.Local.json`).
+Lâu không có quà (20 giây), MC xen kẽ câu dẫn với câu kêu gọi: *"Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!"* (`Voice:IdleLines`).
 
 ## 💞 Thanh tình yêu: ôm hôn & khiêu vũ
 
@@ -194,7 +198,7 @@ cách đọc tên quà ở `Voice:GiftNames` (ví dụ `"Rose": "bông hồng"`)
   "ApiKey": "",              // đặt khóa bí mật khi chạy trên server public
   "BigGiftDiamonds": 99,     // từ mức này trở lên bắn pháo hoa
   "DispatchDelayMs": 250,    // giãn cách giữa 2 quà gửi xuống sân khấu
-  "GiftPacingMs": 1500,      // 2 khách lần lượt lên tặng cách nhau ít nhất 1,5s (tăng nếu thấy dồn dập)
+  "GiftPacingMs": 3000,      // 2 khách lần lượt lên tặng cách nhau ít nhất 3s (chỉnh nhanh bằng thanh trượt trong admin)
   "WalkSpeed": 240           // tốc độ đi của khách (pixel/giây)
 }
 ```
