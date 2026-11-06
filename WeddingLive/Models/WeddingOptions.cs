@@ -39,10 +39,10 @@ public class WeddingOptions
     public int DanceAt { get; set; } = 300;
 
     /// <summary>Khoảng cách tối thiểu (ms) giữa 2 khách lần lượt đứng dậy lên tặng quà. Lớn = thong thả hơn.</summary>
-    public int GiftPacingMs { get; set; } = 5000;
+    public int GiftPacingMs { get; set; } = 6000;
 
     /// <summary>Tốc độ đi của khách (pixel/giây). Nhỏ = đi chậm hơn.</summary>
-    public int WalkSpeed { get; set; } = 240;
+    public int WalkSpeed { get; set; } = 200;
 
     /// <summary>
     /// Sân khấu tự sinh động khi vắng: khách mời (NPC, tên "Khách N") tự lên chúc mừng, nói chuyện, tim bay.

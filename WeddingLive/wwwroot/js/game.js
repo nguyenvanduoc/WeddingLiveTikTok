@@ -12,7 +12,7 @@
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 5000, walkSpeed: 240 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 6000, walkSpeed: 200 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -759,9 +759,11 @@
     processQueue() {
       while (this.queue.length) {
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
-        // Hàng chờ dài => nhịp nhanh dần (tối thiểu 1.5 giây/khách) để quà thật không phải chờ lâu
-        const pacing = Math.max(Math.min(1500, cfg.giftPacingMs ?? 5000), (cfg.giftPacingMs ?? 5000) / (1 + Math.max(0, this.queue.length - 2) * 0.6));
-        const wait = (this.lastSend || 0) + (this.queue[0].demo ? pacing : 700) - performance.now();   // quà THẬT: đi ngay
+        // Nhịp đi lên thong thả: quà DEMO đúng giftPacingMs; quà THẬT nhanh hơn chút (60%, tối thiểu 3 giây).
+        // (MC vẫn ĐỌC quà thật ngay lúc quà tới – chỉ phần khách đi lên là giãn ra.)
+        const base = cfg.giftPacingMs ?? 6000;
+        const pacing = this.queue[0].demo ? base : Math.max(3000, base * 0.6);
+        const wait = (this.lastSend || 0) + pacing - performance.now();
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
@@ -837,7 +839,7 @@
       if (!gift.npc && !gift.announced) voice.announceGift(gift);   // quà DEMO: MC đọc khi khách đi lên
 
       // Hàng đợi dài => đi nhanh hơn
-      const speed = (cfg.walkSpeed || 240) * (1 + Math.min(this.queue.length, 8) * 0.05);   // quà dồn nhiều: nhanh thêm tối đa 40%
+      const speed = cfg.walkSpeed || 200;            // đi thong thả, không tăng tốc khi quà dồn
       const pathUp = [...guest.path, { x: slot.x, y: slot.y }];
       const pathBack = [...guest.path].reverse().concat({ x: guest.homeX, y: guest.homeY });
 
