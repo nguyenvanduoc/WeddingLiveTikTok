@@ -23,12 +23,9 @@ if not exist "tiktok-bridge\node_modules" (
   echo [3/4] Thu vien bridge da co.
 )
 
-if not exist "tiktok-bridge\.env" (
-  copy "tiktok-bridge\.env.example" "tiktok-bridge\.env" >nul
-  echo.
-  echo  Dang mo file .env - dien TIKTOK_USERNAME roi LUU va DONG Notepad de tiep tuc.
-  notepad "tiktok-bridge\.env"
-)
+echo.
+echo  Chua dien TIKTOK_USERNAME trong tiktok-bridge\.env thi bridge chay CHE DO DEMO (qua gia de test).
+echo.
 
 echo [4/4] Chay TikTok bridge (cua so moi)...
 start "WeddingLive - TikTok bridge" cmd /k "npm --prefix tiktok-bridge start"

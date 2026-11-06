@@ -7,8 +7,21 @@
 //    follow/share -> /api/events/social
 //    trạng thái kết nối -> /api/events/status
 // =====================================================================
-import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector';
+import { runDemo } from './demo.js';
+
+// Lần đầu chạy: chưa có .env thì tự tạo từ .env.example
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ENV_PATH = path.join(HERE, '.env');
+if (!fs.existsSync(ENV_PATH) && fs.existsSync(path.join(HERE, '.env.example'))) {
+  fs.copyFileSync(path.join(HERE, '.env.example'), ENV_PATH);
+  console.log(`📝 Đã tạo file cấu hình mặc định: ${ENV_PATH}`);
+}
+dotenv.config({ path: ENV_PATH });
 
 const USERNAME = (process.env.TIKTOK_USERNAME || '').replace(/^@/, '');
 const SERVER = (process.env.SERVER_URL || 'http://localhost:5000').replace(/\/$/, '');
@@ -16,10 +29,9 @@ const API_KEY = process.env.API_KEY || '';
 const EULER_KEY = process.env.EULER_API_KEY || undefined;
 const SEND_JOIN = process.env.SEND_JOIN === 'true';
 
-if (!USERNAME) {
-  console.error('❌ Thiếu TIKTOK_USERNAME trong file .env');
-  process.exit(1);
-}
+// Chưa điền tên TikTok (hoặc DEMO=true) => chạy chế độ DEMO: tự tạo quà/bình luận giả để test
+const PLACEHOLDER = ['', 'ten_tiktok_cua_ban'];
+const DEMO = process.env.DEMO === 'true' || PLACEHOLDER.includes(USERNAME.toLowerCase());
 
 // ---------- Gửi sự kiện sang server .NET ----------
 async function post(path, body) {
@@ -58,106 +70,117 @@ function giftInfo(d) {
   };
 }
 
-// ---------- Kết nối TikTok ----------
-const connection = new TikTokLiveConnection(USERNAME, {
-  signApiKey: EULER_KEY,
-  enableExtendedGiftInfo: true
-});
-
-// QUÀ: quà combo (giftType = 1, vd Rose) bắn nhiều event khi đang combo,
-// chỉ xử lý khi repeatEnd = true để có tổng số lượng cuối cùng.
-connection.on(WebcastEvent.GIFT, (d) => {
-  const g = giftInfo(d);
-  if (g.type === 1 && !d.repeatEnd) return;
-  const user = mapUser(d.user);
-  console.log(`🎁 ${user.nickname} tặng ${g.count} x ${g.name} (${g.diamonds}💎/cái)`);
-  post('gift', { ...user, giftName: g.name, count: g.count, diamondValue: g.diamonds });
-});
-
-connection.on(WebcastEvent.CHAT, (d) => {
-  const comment = first(d.comment, d.content, '');
-  if (!comment) return;
-  const user = mapUser(d.user);
-  console.log(`💬 ${user.nickname}: ${comment}`);
-  post('chat', { userId: user.userId, nickname: user.nickname, comment });
-});
-
-// Tim đến rất dày => gom lại, 1.5 giây gửi 1 lần
-let likeBuffer = 0, lastLiker = '';
-connection.on(WebcastEvent.LIKE, (d) => {
-  likeBuffer += Number(first(d.likeCount, d.count, 1)) || 1;
-  lastLiker = mapUser(d.user).nickname;
-});
-setInterval(() => {
-  if (likeBuffer > 0) {
-    post('like', { userId: '', nickname: lastLiker, likeCount: likeBuffer });
-    likeBuffer = 0;
-  }
-}, 1500);
-
-connection.on(WebcastEvent.FOLLOW, (d) => {
-  const u = mapUser(d.user);
-  post('social', { userId: u.userId, nickname: u.nickname, action: 'follow' });
-});
-connection.on(WebcastEvent.SHARE, (d) => {
-  const u = mapUser(d.user);
-  post('social', { userId: u.userId, nickname: u.nickname, action: 'share' });
-});
-if (SEND_JOIN) {
-  connection.on(WebcastEvent.MEMBER, (d) => {
-    const u = mapUser(d.user);
-    post('social', { userId: u.userId, nickname: u.nickname, action: 'join' });
+// =====================================================================
+//  CHẾ ĐỘ LIVE THẬT
+// =====================================================================
+function startLive() {
+  // ---------- Kết nối TikTok ----------
+  const connection = new TikTokLiveConnection(USERNAME, {
+    signApiKey: EULER_KEY,
+    enableExtendedGiftInfo: true
   });
-}
 
-connection.on(WebcastEvent.STREAM_END, () => {
-  console.log('📴 Live đã kết thúc');
-  status(false, 'Live đã kết thúc');
-});
+  // QUÀ: quà combo (giftType = 1, vd Rose) bắn nhiều event khi đang combo,
+  // chỉ xử lý khi repeatEnd = true để có tổng số lượng cuối cùng.
+  connection.on(WebcastEvent.GIFT, (d) => {
+    const g = giftInfo(d);
+    if (g.type === 1 && !d.repeatEnd) return;
+    const user = mapUser(d.user);
+    console.log(`🎁 ${user.nickname} tặng ${g.count} x ${g.name} (${g.diamonds}💎/cái)`);
+    post('gift', { ...user, giftName: g.name, count: g.count, diamondValue: g.diamonds });
+  });
 
-// ---------- Tự kết nối lại ----------
-let retryMs = 5000;
-let reconnectTimer = null;
+  connection.on(WebcastEvent.CHAT, (d) => {
+    const comment = first(d.comment, d.content, '');
+    if (!comment) return;
+    const user = mapUser(d.user);
+    console.log(`💬 ${user.nickname}: ${comment}`);
+    post('chat', { userId: user.userId, nickname: user.nickname, comment });
+  });
 
-function scheduleReconnect(reason) {
-  if (reconnectTimer) return;
-  console.log(`🔁 Thử kết nối lại sau ${retryMs / 1000}s (${reason})`);
-  reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, retryMs);
-  retryMs = Math.min(retryMs * 2, 60000);
-}
+  // Tim đến rất dày => gom lại, 1.5 giây gửi 1 lần
+  let likeBuffer = 0, lastLiker = '';
+  connection.on(WebcastEvent.LIKE, (d) => {
+    likeBuffer += Number(first(d.likeCount, d.count, 1)) || 1;
+    lastLiker = mapUser(d.user).nickname;
+  });
+  setInterval(() => {
+    if (likeBuffer > 0) {
+      post('like', { userId: '', nickname: lastLiker, likeCount: likeBuffer });
+      likeBuffer = 0;
+    }
+  }, 1500);
 
-connection.on(ControlEvent.DISCONNECTED, ({ code, reason } = {}) => {
-  console.log(`🔌 Mất kết nối (${code ?? ''} ${reason ?? ''})`);
-  status(false, 'Mất kết nối, đang thử lại…');
-  scheduleReconnect('disconnected');
-});
-
-connection.on(ControlEvent.ERROR, ({ info, exception } = {}) => {
-  console.warn('⚠️  Lỗi:', info || '', exception?.message || '');
-});
-
-async function connect() {
-  try {
-    const state = await connection.connect();
-    retryMs = 5000;
-    console.log(`✅ Đã kết nối live @${USERNAME} (roomId ${state.roomId})`);
-    status(true, 'Đang nhận sự kiện');
-  } catch (err) {
-    const msg = err?.constructor?.name === 'UserOfflineError'
-      ? `@${USERNAME} chưa phát live`
-      : (err?.message || String(err));
-    console.error('❌ Không kết nối được:', msg);
-    status(false, msg);
-    scheduleReconnect(msg);
+  connection.on(WebcastEvent.FOLLOW, (d) => {
+    const u = mapUser(d.user);
+    post('social', { userId: u.userId, nickname: u.nickname, action: 'follow' });
+  });
+  connection.on(WebcastEvent.SHARE, (d) => {
+    const u = mapUser(d.user);
+    post('social', { userId: u.userId, nickname: u.nickname, action: 'share' });
+  });
+  if (SEND_JOIN) {
+    connection.on(WebcastEvent.MEMBER, (d) => {
+      const u = mapUser(d.user);
+      post('social', { userId: u.userId, nickname: u.nickname, action: 'join' });
+    });
   }
+
+  connection.on(WebcastEvent.STREAM_END, () => {
+    console.log('📴 Live đã kết thúc');
+    status(false, 'Live đã kết thúc');
+  });
+
+  // ---------- Tự kết nối lại ----------
+  let retryMs = 5000;
+  let reconnectTimer = null;
+
+  function scheduleReconnect(reason) {
+    if (reconnectTimer) return;
+    console.log(`🔁 Thử kết nối lại sau ${retryMs / 1000}s (${reason})`);
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, retryMs);
+    retryMs = Math.min(retryMs * 2, 60000);
+  }
+
+  connection.on(ControlEvent.DISCONNECTED, ({ code, reason } = {}) => {
+    console.log(`🔌 Mất kết nối (${code ?? ''} ${reason ?? ''})`);
+    status(false, 'Mất kết nối, đang thử lại…');
+    scheduleReconnect('disconnected');
+  });
+
+  connection.on(ControlEvent.ERROR, ({ info, exception } = {}) => {
+    console.warn('⚠️  Lỗi:', info || '', exception?.message || '');
+  });
+
+  async function connect() {
+    try {
+      const state = await connection.connect();
+      retryMs = 5000;
+      console.log(`✅ Đã kết nối live @${USERNAME} (roomId ${state.roomId})`);
+      status(true, 'Đang nhận sự kiện');
+    } catch (err) {
+      const msg = err?.constructor?.name === 'UserOfflineError'
+        ? `@${USERNAME} chưa phát live`
+        : (err?.message || String(err));
+      console.error('❌ Không kết nối được:', msg);
+      status(false, msg);
+      scheduleReconnect(msg);
+    }
+  }
+
+  process.on('SIGINT', async () => {
+    console.log('\n👋 Dừng bridge');
+    await status(false, 'Bridge đã dừng');
+    try { await connection.disconnect(); } catch { }
+    process.exit(0);
+  });
+
+  console.log(`🚀 Bridge: TikTok @${USERNAME} -> ${SERVER}`);
+  connect();
 }
 
-process.on('SIGINT', async () => {
-  console.log('\n👋 Dừng bridge');
-  await status(false, 'Bridge đã dừng');
-  try { await connection.disconnect(); } catch { }
-  process.exit(0);
-});
-
-console.log(`🚀 Bridge: TikTok @${USERNAME} -> ${SERVER}`);
-connect();
+if (DEMO) {
+  runDemo({ post, server: SERVER, intervalMs: Number(process.env.DEMO_INTERVAL_MS) || 5000 });
+} else {
+  startLive();
+}

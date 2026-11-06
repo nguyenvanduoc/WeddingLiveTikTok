@@ -37,9 +37,15 @@ Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
 
 | Lệnh | Tương đương |
 |---|---|
-| `npm run server` | `dotnet run --project WeddingLive` |
+| `npm run server` | tắt server cũ rồi `dotnet run --project WeddingLive` |
 | `npm run setup` | `npm install` trong `tiktok-bridge` (chạy 1 lần) |
-| `npm start` | chạy TikTok bridge |
+| `npm start` | chạy TikTok bridge (tự cài thư viện; chưa điền tên TikTok thì chạy DEMO) |
+
+### 🧪 Chế độ DEMO (test không cần live)
+
+Chưa điền `TIKTOK_USERNAME` trong `tiktok-bridge/.env` (file tự tạo lần đầu chạy) → bridge tự tạo **quà, bình luận, tim, follow giả**
+khoảng mỗi 5 giây, gửi vào server y như dữ liệu thật. Điền tên TikTok vào `.env` là chuyển sang live thật.
+Đặt `DEMO=true` để luôn chạy demo, `DEMO_INTERVAL_MS` để chỉnh nhịp.
 
 ## Chạy thử (không cần live)
 
