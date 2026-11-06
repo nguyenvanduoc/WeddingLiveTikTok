@@ -12,7 +12,7 @@
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 1500, walkSpeed: 240 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 3000, walkSpeed: 240 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -401,10 +401,11 @@
       const now = performance.now();
       if (now - this.lastReal < (cfg.idleAfterSeconds ?? 6) * 1000) return;   // vừa có hoạt động thật
       if (now < this.idleNext || this.queue.length || this.coupleBusy) return;
-      this.idleNext = now + (cfg.idleEverySeconds ?? 4) * 1000 * (0.7 + Math.random() * 0.6);
+      this.idleNext = now + (cfg.idleEverySeconds ?? 8) * 1000 * (0.7 + Math.random() * 0.6);
       const r = Math.random();
-      if (r < 0.5) this.npcVisit();
-      else if (r < 0.88) this.npcChat();
+      if (r < 0.35) this.npcVisit();
+      else if (r < 0.65) this.npcChat();
+      else if (r < 0.9) voice.idleLine();          // MC: "Mọi người ơi, hãy tặng gì đó để chúc mừng cô dâu và chú rể đi nào!"
       else { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
     }
 
@@ -576,7 +577,7 @@
     processQueue() {
       while (this.queue.length) {
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
-        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 1500) - performance.now();
+        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 3000) - performance.now();
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
@@ -824,6 +825,12 @@
       conn.on('ResetStage', () => this.onReset());
       conn.on('Speak', e => voice.speakNow(e.text));
       conn.on('VoiceConfigChanged', () => voice.load());   // đổi tốc độ ở admin => áp dụng ngay
+      conn.on('StageConfigChanged', async () => {        // đổi nhịp quà ở admin => áp dụng ngay (bố cục giữ nguyên)
+        try {
+          const c = await (await fetch('/api/config')).json();
+          ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
+        } catch { }
+      });
       conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset
       conn.on('CoupleAction', a => this.queueCouple(a.action));   // admin bấm thử
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin

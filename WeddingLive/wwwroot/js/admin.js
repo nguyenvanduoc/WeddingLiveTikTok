@@ -196,6 +196,25 @@
     setTimeout(reloadVoiceConfig, 800);
   });
 
+  // Thanh trượt nhịp sân khấu => lưu appsettings.Local.json, sân khấu áp dụng ngay
+  const showStage = (c) => {
+    if (c.giftPacingMs !== undefined && document.activeElement !== $('pace')) { $('pace').value = c.giftPacingMs / 1000; $('paceVal').textContent = c.giftPacingMs / 1000 + ' giây'; }
+    if (c.idleEverySeconds !== undefined && document.activeElement !== $('idleEvery')) { $('idleEvery').value = c.idleEverySeconds; $('idleVal').textContent = c.idleEverySeconds + ' giây'; }
+  };
+  const reloadStageConfig = () => fetch('/api/config').then(r => r.json()).then(showStage).catch(() => { });
+  async function saveStage(body, msg) {
+    const res = await fetch('/api/stage/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': $('apiKey').value }, body: JSON.stringify(body)
+    });
+    log(res.ok ? msg : `❌ Lưu nhịp lỗi: HTTP ${res.status}${res.status === 404 ? ' – ' + OLD_SERVER : ''}`);
+    setTimeout(reloadStageConfig, 800);
+  }
+  $('pace').addEventListener('input', () => { $('paceVal').textContent = $('pace').value + ' giây'; });
+  $('pace').addEventListener('change', () => saveStage({ giftPacingMs: Math.round($('pace').value * 1000) }, `🐢 Khách lên tặng cách nhau ${$('pace').value} giây`));
+  $('idleEvery').addEventListener('input', () => { $('idleVal').textContent = $('idleEvery').value + ' giây'; });
+  $('idleEvery').addEventListener('change', () => saveStage({ idleEverySeconds: +$('idleEvery').value }, `🎉 Khách mời tự hoạt động mỗi ${$('idleEvery').value} giây`));
+  reloadStageConfig();
+
   Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])
     .then(([w, v]) => {
       showVoiceConfig(v);

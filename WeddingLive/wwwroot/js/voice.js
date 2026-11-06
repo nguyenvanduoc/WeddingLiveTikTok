@@ -16,7 +16,9 @@
     let topGifter = '';                          // người tặng nhiều nhất (cho câu dẫn có {top1})
     let meter = null;                            // thanh tình yêu: { points, left, next }
     let onSpeak = () => { }, onSilent = () => { };   // nhân vật MC: nhép miệng + phụ đề
-    let announceIndex = 0;
+    let announceIndex = 0, idleIndex = 0, autoCount = 0;
+    let lastGiftAt = performance.now();         // lần gần nhất có quà thật (mở trang: chào mừng trước, 20s sau mới kêu gọi)
+    const nextIdleLine = () => fill(cfg.idleLines[idleIndex++ % cfg.idleLines.length], base());   // xoay vòng, không lặp liền
     let isStageBusy = () => false;
 
     // Trạng thái giọng (báo về server để trang admin chẩn đoán):
@@ -206,6 +208,12 @@
       const every = (cfg.announceIntervalSeconds || 0) * 1000;
       if (!every || playing || locked || queue.length || isStageBusy()) return;
       if (performance.now() - lastSpoke < every) return;
+      // Lâu không có quà (20s): xen kẽ 1 câu dẫn – 1 câu kêu gọi "hãy tặng gì đó để chúc mừng cô dâu chú rể"
+      const quiet = performance.now() - lastGiftAt > 20000;
+      if (quiet && cfg.idleLines?.length && autoCount++ % 2 === 0) {
+        enqueue(nextIdleLine(), 0);
+        return;
+      }
       const list = cfg.announcements || [];
       // Bỏ qua câu có {top1} khi chưa ai tặng quà
       for (let tries = 0; tries < list.length; tries++) {
@@ -257,7 +265,7 @@
       /** Sân khấu vắng: MC mời gọi người xem (chỉ khi MC đang rảnh). */
       idleLine() {
         if (playing || queue.length || !cfg.idleLines?.length) return;
-        enqueue(fill(pick(cfg.idleLines), base()), 0.5);
+        enqueue(nextIdleLine(), 0.5);
       },
       /** Cập nhật thanh tình yêu: { points, left, next } (dùng cho {points} {left} {next}). */
       setMeter(m) { meter = m; },
@@ -274,6 +282,7 @@
       setTopGifter(name) { topGifter = name ? cleanName(name) : ''; },
       /** Khách bắt đầu lên sân khấu: đọc tên người tặng + quà gì (mỗi quà 1 câu). */
       announceGift(gift) {
+        lastGiftAt = performance.now();
         enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), 3.5);
       },
       /** Khách trao quà xong: quà lớn thì cảm ơn thêm; quà thường cảm ơn khi MC đang rảnh. */

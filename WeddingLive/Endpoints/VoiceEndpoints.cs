@@ -95,6 +95,20 @@ public static class VoiceEndpoints
             return Results.Ok(new { saved = path });
         }).AddEndpointFilter<ApiKeyFilter>();
 
+        // Admin chỉnh nhịp sân khấu (khách lên tặng cách nhau, khách mời tự hoạt động) => appsettings.Local.json
+        app.MapPost("/api/stage/settings", async (StageSettingsRequest req, IWebHostEnvironment env) =>
+        {
+            var path = Path.Combine(env.ContentRootPath, "appsettings.Local.json");
+            var root = File.Exists(path)
+                ? (System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path)) as System.Text.Json.Nodes.JsonObject) ?? new()
+                : new System.Text.Json.Nodes.JsonObject();
+            if (root["Wedding"] is not System.Text.Json.Nodes.JsonObject w) root["Wedding"] = w = new();
+            if (req.GiftPacingMs is int gp) w["GiftPacingMs"] = Math.Clamp(gp, 0, 10000);
+            if (req.IdleEverySeconds is int ie) w["IdleEverySeconds"] = Math.Clamp(ie, 2, 120);
+            await File.WriteAllTextAsync(path, root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            return Results.Ok(new { saved = path });
+        }).AddEndpointFilter<ApiKeyFilter>();
+
         app.MapPost("/api/events/speak", async (SpeakRequest req, IHubContext<WeddingHub> hub) =>
         {
             var text = req.Text?.Trim() ?? "";
@@ -108,4 +122,5 @@ public static class VoiceEndpoints
 
     public record SpeakRequest(string? Text);
     public record VoiceSettingsRequest(double? Speed, int? AnnounceIntervalSeconds);
+    public record StageSettingsRequest(int? GiftPacingMs, int? IdleEverySeconds);
 }
