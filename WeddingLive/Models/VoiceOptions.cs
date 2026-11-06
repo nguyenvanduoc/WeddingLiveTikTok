@@ -37,7 +37,7 @@ public class VoiceOptions
     public double Volume { get; set; } = 1.0;
 
     /// <summary>Lặng bao nhiêu giây thì MC tự nói 1 câu dẫn (0 = tắt). Nhỏ = MC nói liên tục.</summary>
-    public int AnnounceIntervalSeconds { get; set; } = 3;
+    public int AnnounceIntervalSeconds { get; set; } = 6;
 
     public bool ThankFollow { get; set; } = true;
 

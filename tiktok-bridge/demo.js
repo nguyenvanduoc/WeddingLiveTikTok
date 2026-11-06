@@ -97,7 +97,7 @@ export function runDemo({ post, server, intervalMs = 20000 }) {
     const base = { userId: slug(user), nickname: user, demo: true };   // demo: true => server/sân khấu biết đây là quà giả
     const r = Math.random();
 
-    if (r < 0.3) {                 // 30% quà (trước 55-65%)
+    if (r < 0.15) {                // 15% quà (ít quà giả)
       const [giftName, diamondValue] = weightedGift();
       const count = COUNTABLE.includes(giftName) ? rnd([1, 1, 1, 2, 3, 5, 5, 10, 15, 20, 30]) : 1;
       console.log(`🎁 [DEMO] ${user} tặng ${count} x ${giftName}`);

@@ -434,7 +434,7 @@
       this.idleNext = now + (cfg.idleEverySeconds ?? 20) * 1000 * (0.7 + Math.random() * 0.6);
       // Ít quà ảo: 10% khách mời lên tặng, còn lại là nói chuyện, tim bay (MC đã tự xen câu chúc + kêu gọi)
       const r = Math.random();
-      if (r < 0.1) this.npcVisit();
+      if (r < 0.05) this.npcVisit();                // 5%: khách mời tự lên (ít quà ảo)
       else if (r < 0.6) this.npcChat();
       else if (r < 0.8) { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
     }
@@ -696,8 +696,6 @@
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       this.lastRealGift = performance.now();
       if (cfg.musicStopOnGift && music.playing) music.stop(true);   // mặc định: nhạc vẫn chạy, MC đọc quà thì nhạc nhỏ lại
-      // Quà THẬT: MC đọc NGAY khi quà tới (không đợi khách đi lên sân khấu)
-      if (!gift.demo) { voice.announceGift(gift); gift.announced = true; }
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -705,7 +703,7 @@
         if (gift.meter && (!same.meter || gift.meter.seq > same.meter.seq)) same.meter = gift.meter;
         same.actions = [...(same.actions || []), ...(gift.actions || [])];
       }
-      else if (gift.demo && this.queue.length >= 3) { this.stat('demoSkip'); return; }   // quà giả DEMO: không để dồn hàng
+      else if (gift.demo && this.queue.length >= 1) { this.stat('demoSkip'); return; }   // quà giả DEMO: chỉ nhận khi hàng đang trống
       else if (isBig(gift)) this.queue.splice(this.queue.findIndex(q => !isBig(q) || q.demo) >>> 0, 0, gift);   // quà lớn lên trước
       else if (!gift.demo) {                               // quà thật từ TikTok: xếp TRƯỚC mọi quà DEMO
         const i = this.queue.findIndex(q => q.demo);
@@ -752,7 +750,7 @@
           if (g.meter && (!next.meter || g.meter.seq > next.meter.seq)) next.meter = g.meter;
           next.actions = [...(g.actions || []), ...(next.actions || [])];
         } else if (g.meter) this.onMeter(g.meter);
-        if (!g.demo && !g.announced) dropped.push(g.nickname);
+        if (!g.demo) dropped.push(g.nickname);
         this.stat('merged');
       }
       if (dropped.length) voice.thankMany(dropped);
@@ -836,7 +834,8 @@
         guest.heldGift = this.makeGiftVisual(gift, 24, -50, 32, emoji);
         guest.puppet.add(guest.heldGift);
       } else guest.gift.setText(emoji);
-      if (!gift.npc && !gift.announced) voice.announceGift(gift);   // quà DEMO: MC đọc khi khách đi lên
+      // MC đọc quà ĐÚNG LÚC khách này đứng dậy đi lên => thứ tự đọc = thứ tự lên sân khấu
+      if (!gift.npc) voice.announceGift(gift);
 
       // Hàng đợi dài => đi nhanh hơn
       const speed = cfg.walkSpeed || 200;            // đi thong thả, không tăng tốc khi quà dồn

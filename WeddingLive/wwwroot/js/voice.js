@@ -142,7 +142,7 @@
       playing = false;
       onSilent();
       lastSpoke = performance.now();
-      setTimeout(pump, queue.some(q => q.real) ? 50 : 250);   // còn tin thật => đọc tiếp liền
+      setTimeout(pump, queue.some(q => q.real) ? 300 : 1200);   // nghỉ giữa 2 câu cho thong thả (tin thật: nghỉ ngắn)
     }
 
     function enqueue(text, priority, extra = {}) {
@@ -244,7 +244,7 @@
       return fill(quoteOrder.shift() || '', base());
     };
     setInterval(() => {
-      const every = (cfg.announceIntervalSeconds || 0) * 1000;
+      const every = cfg.announceIntervalSeconds ? Math.max(6, cfg.announceIntervalSeconds) * 1000 : 0;   // tối thiểu 6 giây
       if (!every || playing || locked || queue.length || isStageBusy()) return;
       const musicOn = isMusicPlaying();
       if (performance.now() - lastSpoke < (musicOn ? Math.max(every, 20000) : every)) return;
