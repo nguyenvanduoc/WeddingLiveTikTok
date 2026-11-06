@@ -26,7 +26,7 @@ public static class LiveEndpoints
             Tables = Math.Clamp(o.CurrentValue.Tables, 0, 5),
             GuestsPerTable = Math.Clamp(o.CurrentValue.GuestsPerTable, 4, 12),
             o.CurrentValue.BigGiftDiamonds,
-            GiftPacingMs = Math.Clamp(o.CurrentValue.GiftPacingMs, 0, 10000),
+            GiftPacingMs = Math.Clamp(o.CurrentValue.GiftGapMs, 0, 30000),
             WalkSpeed = Math.Clamp(o.CurrentValue.WalkSpeed, 80, 600),
             o.CurrentValue.IdleActivity,
             IdleAfterSeconds = Math.Clamp(o.CurrentValue.IdleAfterSeconds, 2, 600),

@@ -39,7 +39,7 @@ public class WeddingOptions
     public int DanceAt { get; set; } = 300;
 
     /// <summary>Khoảng cách tối thiểu (ms) giữa 2 khách lần lượt đứng dậy lên tặng quà. Lớn = thong thả hơn.</summary>
-    public int GiftPacingMs { get; set; } = 6000;
+    public int GiftGapMs { get; set; } = 10000;   // mọi lượt khách đi lên tặng quà cách nhau 10 giây
 
     /// <summary>Tốc độ đi của khách (pixel/giây). Nhỏ = đi chậm hơn.</summary>
     public int WalkSpeed { get; set; } = 200;

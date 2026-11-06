@@ -105,7 +105,7 @@ public static class VoiceEndpoints
                 ? (System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path)) as System.Text.Json.Nodes.JsonObject) ?? new()
                 : new System.Text.Json.Nodes.JsonObject();
             if (root["Wedding"] is not System.Text.Json.Nodes.JsonObject w) root["Wedding"] = w = new();
-            if (req.GiftPacingMs is int gp) w["GiftPacingMs"] = Math.Clamp(gp, 0, 10000);
+            if (req.GiftPacingMs is int gp) w["GiftGapMs"] = Math.Clamp(gp, 0, 30000);
             if (req.IdleEverySeconds is int ie) w["IdleEverySeconds"] = Math.Clamp(ie, 2, 120);
             if (req.MusicEverySeconds is int me) w["MusicEverySeconds"] = Math.Clamp(me, 5, 3600);
             if (req.MusicVolume is double mv) w["MusicVolume"] = Math.Round(Math.Clamp(mv, 0, 1), 2);

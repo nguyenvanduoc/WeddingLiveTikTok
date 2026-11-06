@@ -12,7 +12,7 @@
   if (TRANSPARENT) document.body.classList.add('transparent');
 
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
-  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 6000, walkSpeed: 200 };
+  let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 10000, walkSpeed: 200 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
 
   // Tên quà -> emoji hiển thị trên tay khách
@@ -442,6 +442,7 @@
     npcVisit() {
       const free = this.slots.filter(s => !s.busy);
       if (free.length < 2) return;                   // chừa chỗ cho người tặng thật
+      if (performance.now() - (this.lastSend || 0) < (cfg.giftPacingMs ?? 10000)) return;   // cách lượt trước >= 10 giây
       // Chỉ khách chưa mang tên người tặng thật (không để tên người thật "tặng thêm" giả)
       const idle = this.guests.filter(g => !g.busy && !g.bubble && !g.userId);
       if (!idle.length) return;
@@ -450,6 +451,7 @@
       const name = this.pickFresh('npcNames', NPC_ROLES, 60);       // không lặp tên trong 60 lượt
       const [emoji, offer] = this.pickFresh('npcOffers', NPC_OFFERS, 30);   // không lặp quà trong 30 lượt
       this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji, npcName: name });
+      this.lastSend = performance.now();
       if (Math.random() < 0.5) voice.npcVisit(name, offer);   // "Bác Tư lên trao phong bì mừng cô dâu chú rể!"
       else if (Math.random() < 0.5) voice.idleLine();         // hoặc mời gọi người xem trên live
     }
@@ -759,11 +761,9 @@
     processQueue() {
       while (this.queue.length) {
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
-        // Nhịp đi lên thong thả: quà DEMO đúng giftPacingMs; quà THẬT nhanh hơn chút (60%, tối thiểu 3 giây).
-        // (MC vẫn ĐỌC quà thật ngay lúc quà tới – chỉ phần khách đi lên là giãn ra.)
-        const base = cfg.giftPacingMs ?? 6000;
-        const pacing = this.queue[0].demo ? base : Math.max(3000, base * 0.6);
-        const wait = (this.lastSend || 0) + pacing - performance.now();
+        // Mọi lượt khách đi lên (quà thật, DEMO, khách mời) cách nhau giftPacingMs (mặc định 10 giây).
+        // MC vẫn ĐỌC quà thật ngay lúc quà tới – chỉ phần khách đi lên là giãn ra.
+        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 10000) - performance.now();
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
