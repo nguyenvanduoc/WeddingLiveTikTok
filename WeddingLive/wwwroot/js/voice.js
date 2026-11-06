@@ -256,20 +256,22 @@
       onSpeech(start, end) { onSpeak = start; onSilent = end; },
       /** Bình luận/tên có từ cấm không (sân khấu dùng để ẩn bong bóng chat). */
       isBlocked(e) { return isBanned(e?.comment) || isBanned(e?.nickname); },
-      /** Bình luận trên live: MC ưu tiên đọc. */
+      /** Trả về: 'queued' (đã xếp đọc) | 'off' | 'blocked' | 'empty' | 'dup' — để admin chẩn đoán. */
       readChat(e) {
-        if (cfg.readChat === false || this.isBlocked(e)) return;
+        if (cfg.readChat === false) return 'off';
+        if (this.isBlocked(e)) return 'blocked';
         const comment = cleanComment(e.comment);
-        if (!comment) return;
+        if (!comment) return 'empty';
         // Cùng người nhắn cùng câu trong 30 giây => chỉ đọc 1 lần
         const key = (e.userId || e.nickname) + '|' + comment.toLowerCase(), now = performance.now();
-        if (recentChats.get(key) > now - 30000) return;
+        if (recentChats.get(key) > now - 30000) return 'dup';
         recentChats.set(key, now);
         if (recentChats.size > 300) recentChats.clear();
         // Spam bình luận: chỉ giữ N bình luận mới nhất đang chờ đọc
         const waiting = queue.filter(q => q.chat);
         if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
         enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }), PRIORITY_CHAT, { chat: true });
+        return 'queued';
       },
       /** Khách mời trong tiệc lên chúc mừng (chỉ khi MC rảnh, ưu tiên thấp hơn mọi thứ từ TikTok). */
       npcVisit(name, offer) {

@@ -8,7 +8,7 @@ namespace WeddingLive.Services;
 /// </summary>
 public class StageRegistry
 {
-    public record StageInfo(string ConnectionId, bool VoiceOn, string State, string? UserAgent, DateTime Since, string Music = "waiting");
+    public record StageInfo(string ConnectionId, bool VoiceOn, string State, string? UserAgent, DateTime Since, string Music = "waiting", string Stats = "");
 
     private readonly ConcurrentDictionary<string, StageInfo> _stages = new();
 
@@ -20,6 +20,11 @@ public class StageRegistry
     public void SetState(string id, string state)
     {
         if (_stages.TryGetValue(id, out var s)) _stages[id] = s with { State = state };
+    }
+
+    public void SetStats(string id, string stats)
+    {
+        if (_stages.TryGetValue(id, out var s)) _stages[id] = s with { Stats = stats };
     }
 
     public void SetMusic(string id, string music)

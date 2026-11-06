@@ -677,7 +677,18 @@
       return t;
     }
 
+    /** Đếm sự kiện trang sân khấu nhận được (báo về admin để chẩn đoán). */
+    stat(key) {
+      if (!key) return;
+      const s = (this.stats ||= { chat: 0, gift: 0, join: 0, queued: 0, dup: 0, blocked: 0, empty: 0, off: 0 });
+      s[key] = (s[key] || 0) + 1;
+      if (key === 'chat') s.lastChatAt = Date.now();
+      if (key === 'gift') s.lastGiftAt = Date.now();
+      this.statsDirty = true;
+    }
+
     onGift(gift) {
+      this.stat('gift');
       this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
       this.ensureGiftImage(gift);                    // tải sẵn ảnh quà TikTok trong lúc chờ khách đứng dậy
       this.lastRealGift = performance.now();
@@ -880,8 +891,9 @@
     //  BÌNH LUẬN / THẢ TIM / FOLLOW
     // =================================================================
     onChat(e) {
-      if (voice.isBlocked(e)) return;                // có từ cấm: không đọc, không hiện bong bóng
-      voice.readChat(e);                             // MC ưu tiên đọc bình luận
+      this.stat('chat');
+      if (voice.isBlocked(e)) { this.stat('blocked'); return; }   // có từ cấm: không đọc, không hiện bong bóng
+      this.stat(voice.readChat(e));                  // MC ưu tiên đọc bình luận (đếm: queued / dup / empty / off)
       this.lastReal = performance.now();
       // Người xem bình luận: khách mang tên TikTok của họ nói (chưa có thì gán tên cho 1 khách)
       const g = this.assignViewer(e) ||
@@ -935,7 +947,7 @@
     onSocial(e) {
       this.lastReal = performance.now();
       if (e.action === 'follow') voice.thankFollow(e);
-      if (e.action === 'join') { voice.greetJoin(e); this.assignViewer(e); }   // "Hello Thảo Vy!" + khách mang tên người xem
+      if (e.action === 'join') { this.stat('join'); voice.greetJoin(e); this.assignViewer(e); }   // "Hello Thảo Vy!" + khách mang tên người xem
       const icon = { follow: '⭐ vừa theo dõi', share: '🔁 vừa chia sẻ live', join: '👋 vừa vào phòng' }[e.action] || e.action;
       const t = makeLabel(this, `${e.nickname} ${icon}`, { fontSize: '15px', bg: 0x2b2d42, bgAlpha: 0.8 })
         .setDepth(980).setPosition(W + 200, 0);
@@ -1004,12 +1016,26 @@
       voice.onStateChange(report);
       // Trạng thái nhạc (đang phát / chờ bài / bị chặn / tắt) => admin hiển thị
       const reportMusic = () => conn.state === 'Connected' && conn.invoke('ReportMusicState', music.state).catch(() => { });
+      // Số sự kiện trang này đã nhận / đã đọc => admin biết sân khấu có nhận được bình luận không
+      const reportStats = (force) => {
+        if (conn.state !== 'Connected' || (!this.statsDirty && !force)) return;
+        this.statsDirty = false;
+        conn.invoke('ReportStageStats', JSON.stringify(this.stats || {})).catch(() => { });
+      };
+      setInterval(() => reportStats(false), 2000);
       music.setOff(!MUSIC_ON());
       music.onStateChange(reportMusic);
-      conn.onreconnected(() => { report(); reportMusic(); });
+      conn.onreconnected(() => { report(); reportMusic(); reportStats(true); });
+
+      // Huy hiệu nhỏ góc trên khi MẤT kết nối server (lúc đó bình luận/quà TikTok không tới được sân khấu)
+      const badge = document.createElement('div');
+      badge.style.cssText = 'position:fixed;top:6px;left:6px;z-index:99;padding:4px 10px;border-radius:8px;background:#c62828;color:#fff;font:bold 13px sans-serif;display:none';
+      badge.textContent = '⚠ Mất kết nối server – đang thử lại… (nhấn F5 nếu lâu)';
+      document.body.appendChild(badge);
+      setInterval(() => { badge.style.display = conn.state === 'Connected' ? 'none' : 'block'; }, 1000);
 
       const start = async () => {
-        try { await conn.start(); console.log('SignalR connected'); report(); reportMusic(); }
+        try { await conn.start(); console.log('SignalR connected'); report(); reportMusic(); reportStats(true); }
         catch (err) { console.warn('SignalR lỗi, thử lại sau 3s', err); setTimeout(start, 3000); }
       };
       conn.onclose(() => setTimeout(start, 3000));   // hết lượt auto-reconnect thì tự thử lại

@@ -59,4 +59,10 @@ public class WeddingHub : Hub
     {
         if (state.Length <= 20) _stages.SetMusic(Context.ConnectionId, state);
     }
+
+    /// <summary>Trang sân khấu báo số bình luận / quà đã nhận và đã đọc (JSON ngắn).</summary>
+    public void ReportStageStats(string json)
+    {
+        if (json.Length <= 600) _stages.SetStats(Context.ConnectionId, json);
+    }
 }

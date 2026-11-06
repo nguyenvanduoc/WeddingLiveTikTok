@@ -97,7 +97,9 @@ public static class LiveEndpoints
             Recent = log.Recent.Take(10).Select(e => new { e.Type, e.Who, e.Text, Ago = (int)(DateTime.Now - e.At).TotalSeconds }),
             StagesWithVoice = stages.All().Count(s => s.VoiceOn),
             StagesPlaying = stages.All().Count(s => s.VoiceOn && s.State == "ok"),
-            Music = stages.All().Where(s => s.VoiceOn).Select(s => s.Music)
+            Music = stages.All().Where(s => s.VoiceOn).Select(s => s.Music),
+            StageStats = stages.All().Where(s => s.VoiceOn).Select(s => s.Stats),
+            NowMs = DateTimeOffset.Now.ToUnixTimeMilliseconds()
         }));
 
         // ---- Webhook dạng GET cho TikFinity / Streamer.bot ----

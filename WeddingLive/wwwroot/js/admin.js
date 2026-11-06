@@ -192,7 +192,16 @@
       : mus.includes('playing') ? '🎵 <b>đang phát</b>'
       : mus.every(m => m === 'off') ? '🔇 đang tắt (MusicEnabled = false)'
       : '⏳ chờ tới lượt bài tiếp';
-    $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng<br>Nhạc: ${musText}`;
+    // Sân khấu đã nhận / đã đọc bao nhiêu bình luận
+    const stats = (d.stageStats || []).map(s => { try { return JSON.parse(s || '{}'); } catch { return {}; } });
+    const st = stats.reduce((a, s) => { for (const k in s) if (typeof s[k] === 'number' && !/At$/.test(k)) a[k] = (a[k] || 0) + s[k]; a.lastChatAt = Math.max(a.lastChatAt || 0, s.lastChatAt || 0); return a; }, {});
+    const recvText = stats.length
+      ? `Sân khấu đã nhận: 💬 <b>${st.chat || 0}</b> (đọc ${st.queued || 0}${st.dup ? ', trùng ' + st.dup : ''}${st.blocked ? ', từ cấm ' + st.blocked : ''}${st.empty ? ', rỗng/emoji ' + st.empty : ''}${st.off ? ', TẮT đọc ' + st.off : ''}) · 🎁 <b>${st.gift || 0}</b> · 👋 <b>${st.join || 0}</b>`
+      : '';
+    $('diagStages').innerHTML = `${d.stagesWithVoice} trang bật tiếng · <b>${d.stagesPlaying}</b> trang đang phát tiếng<br>Nhạc: ${musText}${recvText ? '<br>' + recvText : ''}`;
+    // Server có bình luận mới mà sân khấu không nhận => sân khấu mất kết nối với server
+    const stageLagSec = st.lastChatAt ? Math.round((d.nowMs - st.lastChatAt) / 1000) : null;
+    const stageMissedChat = stats.length && last.chat != null && last.chat < 120 && (stageLagSec == null || stageLagSec > last.chat + 10);
     $('diagRecent').innerHTML = (d.recent || []).map(e => `<li>${TYPE[e.type] || '•'} <b>${e.who}</b> ${e.text} <small>– ${ago(e.ago)}</small></li>`).join('') || '<li>(chưa có)</li>';
 
     // Kết luận: đứt ở mắt xích nào
@@ -203,6 +212,8 @@
     else if (!b.connected) v = '❌ Bridge chưa vào được phòng live: ' + (b.message || '') + '. Đã bấm Go LIVE chưa? Xem dòng 👉 trong cửa sổ bridge.';
     else if (!c.chat && !c.join && !c.like) v = '⏳ Đã kết nối live @' + b.username + ' nhưng chưa nhận sự kiện nào. Nhờ ai đó bình luận trên live để thử.';
     else if (!d.stagesPlaying && d.stagesWithVoice === 0) v = '❌ Bình luận ĐÃ tới server nhưng KHÔNG có trang sân khấu nào bật tiếng → không ai đọc. Mở open-stage.bat hoặc tick "Bật tiếng khung xem trước".';
+    else if (stageMissedChat) v = '❌ Server ĐÃ nhận bình luận nhưng trang sân khấu KHÔNG nhận được (mất kết nối với server). Bấm vào cửa sổ sân khấu rồi nhấn F5 (tải lại trang).';
+    else if (st.off) v = '❌ Đang TẮT đọc bình luận: sửa "ReadChat": true trong appsettings.json (mục Voice).';
     else if (!d.stagesPlaying) v = '⚠️ Bình luận đã tới, sân khấu có bật tiếng nhưng chưa phát được: bấm nút 🔊 trên trang sân khấu (trình duyệt chặn tiếng) hoặc bấm 🩺 Kiểm tra giọng bên dưới.';
     else {
       v = '✅ Mọi thứ hoạt động: bridge live thật @' + b.username + ', bình luận đã tới server, sân khấu đang phát tiếng.'; ok = true;
