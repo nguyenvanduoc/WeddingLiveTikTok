@@ -6,6 +6,7 @@
     "start": "npm --prefix tiktok-bridge start",
     "bridge": "npm --prefix tiktok-bridge start",
     "setup": "npm --prefix tiktok-bridge install",
+    "preserver": "node -e \"try{require('child_process').execSync(process.platform==='win32'?'taskkill /IM WeddingLive.exe /F':'pkill -x WeddingLive',{stdio:'ignore'})}catch(e){}\"",
     "server": "dotnet run --project WeddingLive"
   }
 }
