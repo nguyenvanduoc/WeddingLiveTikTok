@@ -10,6 +10,7 @@
   try { $('apiKey').value = localStorage.getItem('apiKey') || ''; } catch { }
   $('apiKey').addEventListener('change', () => { try { localStorage.setItem('apiKey', $('apiKey').value); } catch { } });
 
+  const OLD_SERVER = 'Server đang chạy bản CŨ (chưa có API mới). Tắt hết cửa sổ dotnet run (Ctrl+C) rồi chạy lại: dotnet run --project WeddingLive';
   const log = (s) => { $('log').textContent = `[${new Date().toLocaleTimeString()}] ${s}\n` + $('log').textContent.slice(0, 3000); };
 
   async function post(path, body) {
@@ -18,7 +19,7 @@
       headers: { 'Content-Type': 'application/json', 'X-Api-Key': $('apiKey').value },
       body: JSON.stringify(body ?? {})
     });
-    if (!res.ok) log(`❌ ${path}: HTTP ${res.status}${res.status === 401 ? ' (sai API key)' : ''}`);
+    if (!res.ok) log(`❌ ${path}: HTTP ${res.status}${res.status === 401 ? ' (sai API key)' : res.status === 404 ? ' – ' + OLD_SERVER : ''}`);
     return res.ok;
   }
 
@@ -62,6 +63,7 @@
   async function playTts(text) {
     const t0 = performance.now();
     const res = await fetch('/api/tts?text=' + encodeURIComponent(text));
+    if (res.status === 404) throw new Error(OLD_SERVER);
     if (!res.ok) throw new Error(`Server không tạo được giọng (HTTP ${res.status}). Xem dòng "TTS ... lỗi" trong cửa sổ dotnet run.`);
     const blob = await res.blob();
     const audio = new Audio(URL.createObjectURL(blob));
@@ -79,9 +81,16 @@
   };
   const where = (ua) => /OBS|obs-browser/i.test(ua || '') ? 'OBS' : (/Headless/i.test(ua || '') ? 'Headless' : 'Trình duyệt');
 
+  async function getVoiceStatus() {
+    const res = await fetch('/api/voice/status');
+    if (res.status === 404) throw new Error(OLD_SERVER);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
   async function refreshVoiceStatus() {
     try {
-      const s = await (await fetch('/api/voice/status')).json();
+      const s = await getVoiceStatus();
       const lines = [];
       const withVoice = s.stages.filter(x => x.voiceOn);
       if (!s.enabled) lines.push('<span class="bad">❌ Giọng MC đang tắt (Voice:Enabled = false trong appsettings.json)</span>');
@@ -89,7 +98,9 @@
       s.stages.forEach((x, i) => lines.push(`Sân khấu ${i + 1} (${where(x.userAgent)}): ${STATE_TEXT[x.state] || x.state}`));
       if (s.lastError) lines.push(`<span class="bad">Lỗi giọng gần nhất: ${s.lastError}</span>`);
       $('voiceStatus').innerHTML = lines.join('<br>') || '<span class="ok">✅ Ổn</span>';
-    } catch { $('voiceStatus').textContent = 'Không đọc được trạng thái (server đã tắt?)'; }
+    } catch (e) {
+      $('voiceStatus').innerHTML = '<span class="bad">❌ ' + (e.message === OLD_SERVER ? OLD_SERVER : 'Không kết nối được server (cửa sổ dotnet run đã tắt?)') + '</span>';
+    }
   }
   refreshVoiceStatus();
   setInterval(refreshVoiceStatus, 4000);
@@ -98,7 +109,9 @@
     const out = $('diag'); out.hidden = false; out.textContent = '';
     const add = (s) => { out.textContent += s + '\n'; };
     add('1) Cấu hình giọng trên server…');
-    const s = await (await fetch('/api/voice/status')).json();
+    let s;
+    try { s = await getVoiceStatus(); }
+    catch (e) { add('   ❌ ' + (e.message === OLD_SERVER ? OLD_SERVER : 'Không kết nối được server: ' + e.message)); return; }
     add(s.enabled ? `   ✅ Đang bật, giọng: ${s.provider}` : '   ❌ Đang TẮT: sửa "Voice": { "Enabled": true } trong appsettings.json');
     add('2) Server tạo file giọng đọc…');
     try {
