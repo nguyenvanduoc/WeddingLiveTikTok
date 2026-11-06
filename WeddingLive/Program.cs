@@ -1,9 +1,15 @@
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using WeddingLive.Endpoints;
 using WeddingLive.Hubs;
 using WeddingLive.Models;
 using WeddingLive.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cài đặt riêng của máy này (tốc độ giọng chỉnh từ trang admin...). Ghi đè appsettings.json,
+// không đưa lên git => git pull không bị xung đột.
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // Đọc mục "Wedding" trong appsettings.json vào WeddingOptions (sửa file là tự cập nhật, không cần restart)
 builder.Services.Configure<WeddingOptions>(builder.Configuration.GetSection(WeddingOptions.Section));
@@ -44,6 +50,13 @@ app.UseStaticFiles(new StaticFileOptions
 app.MapHub<WeddingHub>("/hub/wedding");
 app.MapLiveEndpoints();
 app.MapVoiceEndpoints();
+
+// Cấu hình giọng thay đổi (sửa file hoặc kéo thanh tốc độ ở admin) => báo mọi trang nạp lại ngay, không cần F5
+{
+    var hub = app.Services.GetRequiredService<IHubContext<WeddingHub>>();
+    app.Services.GetRequiredService<IOptionsMonitor<VoiceOptions>>()
+        .OnChange((_, _) => hub.Clients.All.SendAsync("VoiceConfigChanged"));
+}
 app.MapGet("/health", () => Results.Ok("OK"));
 
 // Phát hiện "đã git pull code mới nhưng chưa chạy lại server": file .cs mới hơn file .dll đang chạy

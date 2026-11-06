@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 # Node bridge
 tiktok-bridge/node_modules/
 tiktok-bridge/.env
+
+# Cài đặt riêng từng máy (tốc độ giọng chỉnh từ admin...)
+WeddingLive/appsettings.Local.json

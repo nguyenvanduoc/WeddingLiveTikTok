@@ -109,7 +109,7 @@ Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu:
 - Sân khấu lặng **3 giây** → MC nói câu dẫn tiếp (`Voice:Announcements`, `AnnounceIntervalSeconds`) ⇒ nói gần như liên tục.
   Câu có `{top1}` (người tặng nhiều nhất) chỉ đọc khi đã có người tặng.
 - Follow → "Cảm ơn … đã theo dõi kênh!". Admin gõ câu → MC đọc ngay.
-- Tốc độ mặc định **x3** (`Voice:Speed`, 0.5 – 3.0).
+- Tốc độ mặc định **x2.5** (`Voice:Speed`, 0.5 – 3.0), kéo thanh trượt trong admin để đổi ngay.
 
 **Live bằng TikTok LIVE Studio:** bấm đúp `open-stage.bat` → mở sân khấu trong cửa sổ Chrome/Edge riêng **được tự phát âm thanh**
 (không cần bấm 🔊) → trong LIVE Studio thêm *Window capture* chọn cửa sổ đó và bật thu âm thanh hệ thống / desktop audio.
@@ -124,7 +124,7 @@ Giọng đọc (`Voice:Provider`):
 | `googlecloud` | Google Cloud Text-to-Speech – giọng `vi-VN-Neural2-A` (nữ) / `vi-VN-Neural2-D` (nam), `vi-VN-Wavenet-A..D`. Cần API key (console.cloud.google.com → bật *Cloud Text-to-Speech API* → Credentials → API key), điền `GoogleCloudKey` |
 | `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
 
-**Tốc độ đọc:** `Voice:Speed` (mặc định `3.0` = nhanh gấp 3; `1.0` bình thường; `1.5` vừa phải; tối đa `3.0`). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
+**Tốc độ đọc:** `Voice:Speed` (mặc định `2.5`; `1.0` bình thường; `1.5` vừa phải; tối đa `3.0`). Chỉnh nhanh bằng **thanh trượt tốc độ** trong trang admin (lưu vào `appsettings.Local.json`, áp dụng ngay). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
 giọng Google miễn phí thì trình duyệt phát nhanh hơn mà vẫn giữ cao độ.
 Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng tạm giọng Google miễn phí, trang admin hiện lý do.
 

@@ -69,6 +69,20 @@ public static class VoiceEndpoints
                 : Results.File(audio, "audio/mpeg");
         });
 
+        // Admin chỉnh tốc độ / nhịp MC => lưu vào appsettings.Local.json (tự nạp lại, không cần chạy lại server)
+        app.MapPost("/api/voice/settings", async (VoiceSettingsRequest req, IWebHostEnvironment env) =>
+        {
+            var path = Path.Combine(env.ContentRootPath, "appsettings.Local.json");
+            var root = File.Exists(path)
+                ? (System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path)) as System.Text.Json.Nodes.JsonObject) ?? new()
+                : new System.Text.Json.Nodes.JsonObject();
+            if (root["Voice"] is not System.Text.Json.Nodes.JsonObject voice) root["Voice"] = voice = new();
+            if (req.Speed is double sp) voice["Speed"] = Math.Round(Math.Clamp(sp, 0.5, 3.0), 2);
+            if (req.AnnounceIntervalSeconds is int iv) voice["AnnounceIntervalSeconds"] = Math.Clamp(iv, 0, 600);
+            await File.WriteAllTextAsync(path, root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            return Results.Ok(new { saved = path });
+        }).AddEndpointFilter<ApiKeyFilter>();
+
         app.MapPost("/api/events/speak", async (SpeakRequest req, IHubContext<WeddingHub> hub) =>
         {
             var text = req.Text?.Trim() ?? "";
@@ -81,4 +95,5 @@ public static class VoiceEndpoints
     }
 
     public record SpeakRequest(string? Text);
+    public record VoiceSettingsRequest(double? Speed, int? AnnounceIntervalSeconds);
 }

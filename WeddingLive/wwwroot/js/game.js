@@ -572,6 +572,7 @@
       conn.on('Leaderboard', l => this.onLeaderboard(l));
       conn.on('ResetStage', () => this.onReset());
       conn.on('Speak', e => voice.speakNow(e.text));
+      conn.on('VoiceConfigChanged', () => voice.load());   // đổi tốc độ ở admin => áp dụng ngay
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 
       // Báo trạng thái giọng về server (trang admin hiển thị để chẩn đoán)

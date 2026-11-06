@@ -172,12 +172,30 @@
   pv.addEventListener('change', () => { try { localStorage.setItem('previewVoice', pv.checked ? '1' : '0'); } catch { } applyPreview(); });
 
   // Câu mẫu lấy từ cấu hình giọng đọc: bấm để đưa vào ô MC
+  function showVoiceConfig(v) {
+    clientSpeed = v.clientSpeed || 1;
+    $('voiceInfo').textContent = !v.enabled ? '(đang tắt – Voice:Enabled = false)'
+      : v.speed === undefined ? '(server bản cũ – chạy lại npm run server)'
+      : `(giọng: ${v.provider}, tốc độ x${v.speed})`;
+    if (v.speed !== undefined && document.activeElement !== $('speed')) { $('speed').value = v.speed; $('speedVal').textContent = 'x' + v.speed; }
+  }
+  const reloadVoiceConfig = () => fetch('/api/voice/config').then(r => r.json()).then(showVoiceConfig).catch(() => { });
+
+  // Thanh trượt tốc độ: lưu lên server (appsettings.Local.json) => mọi sân khấu/OBS áp dụng ngay
+  $('speed').addEventListener('input', () => { $('speedVal').textContent = 'x' + $('speed').value; });
+  $('speed').addEventListener('change', async () => {
+    const speed = +$('speed').value;
+    const res = await fetch('/api/voice/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': $('apiKey').value },
+      body: JSON.stringify({ speed })
+    });
+    log(res.ok ? `🎚️ Tốc độ giọng: x${speed}` : `❌ Lưu tốc độ lỗi: HTTP ${res.status}${res.status === 404 ? ' – ' + OLD_SERVER : ''}`);
+    setTimeout(reloadVoiceConfig, 800);
+  });
+
   Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])
     .then(([w, v]) => {
-      clientSpeed = v.clientSpeed || 1;
-      $('voiceInfo').textContent = !v.enabled ? '(đang tắt – Voice:Enabled = false)'
-        : v.speed === undefined ? '(server bản cũ – chạy lại npm run server)'
-        : `(giọng: ${v.provider}, tốc độ x${v.speed})`;
+      showVoiceConfig(v);
       const fill = (t) => t.replaceAll('{bride}', w.brideName).replaceAll('{groom}', w.groomName);
       (v.announcements || []).slice(0, 7).forEach((t, i) => {
         const b = document.createElement('button');
@@ -192,6 +210,7 @@
 
   // Theo dõi trạng thái bridge TikTok qua SignalR
   const conn = new signalR.HubConnectionBuilder().withUrl('/hub/wedding').withAutomaticReconnect().build();
+  conn.on('VoiceConfigChanged', () => setTimeout(reloadVoiceConfig, 300));
   conn.on('BridgeStatus', (s) => {
     const el = $('status');
     el.className = 'status ' + (s.connected ? 'on' : 'off');
