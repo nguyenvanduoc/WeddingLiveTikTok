@@ -107,7 +107,20 @@ function startLive() {
 
   // QUÀ: quà combo (giftType = 1, vd Rose) bắn nhiều event khi đang combo,
   // chỉ xử lý khi repeatEnd = true để có tổng số lượng cuối cùng.
+  // TikTok hay gửi trùng 1 sự kiện nhiều lần (dữ liệu ban đầu + websocket) => bỏ bản trùng theo msgId
+  const seen = new Map();
+  const isDuplicate = (d, fallbackKey) => {
+    const id = first(d.common?.msgId, d.event?.msgId, d.msgId) ?? fallbackKey;
+    if (!id) return false;
+    const now = Date.now();
+    if (seen.has(id) && now - seen.get(id) < 60000) return true;
+    seen.set(id, now);
+    if (seen.size > 2000) for (const [k, t] of seen) { if (now - t > 60000) seen.delete(k); }
+    return false;
+  };
+
   connection.on(WebcastEvent.GIFT, (d) => {
+    if (isDuplicate(d, null)) return;
     const g = giftInfo(d);
     if (g.type === 1 && !d.repeatEnd) return;
     const user = mapUser(d.user);
@@ -119,6 +132,7 @@ function startLive() {
     const comment = first(d.comment, d.content, '');
     if (!comment) return;
     const user = mapUser(d.user);
+    if (isDuplicate(d, null)) return;
     console.log(`💬 ${user.nickname}: ${comment}`);
     post('chat', { userId: user.userId, nickname: user.nickname, comment });
   });
