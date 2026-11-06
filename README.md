@@ -114,7 +114,12 @@ Giọng đọc (`Voice:Provider`):
 | `auto` (mặc định) | Có `AzureKey` thì dùng Azure, không thì Google |
 | `google` | Google Translate TTS – miễn phí, không cần key (dịch vụ không chính thức) |
 | `azure` | Azure Speech – giọng AI tự nhiên `vi-VN-HoaiMyNeural` (nữ) / `vi-VN-NamMinhNeural` (nam). Tạo resource **Speech** trên portal.azure.com (gói F0 miễn phí 500.000 ký tự/tháng), điền `AzureKey` + `AzureRegion` |
+| `googlecloud` | Google Cloud Text-to-Speech – giọng `vi-VN-Neural2-A` (nữ) / `vi-VN-Neural2-D` (nam), `vi-VN-Wavenet-A..D`. Cần API key (console.cloud.google.com → bật *Cloud Text-to-Speech API* → Credentials → API key), điền `GoogleCloudKey` |
 | `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
+
+**Tốc độ đọc:** `Voice:Speed` (mặc định `1.2` = nhanh hơn 20%; `1.0` bình thường; `1.4` rất nhanh). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
+giọng Google miễn phí thì trình duyệt phát nhanh hơn mà vẫn giữ cao độ.
+Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng tạm giọng Google miễn phí, trang admin hiện lý do.
 
 **Để giọng MC lên live:**
 - OBS: Browser Source → tick **Control audio via OBS** (tiếng đi vào mixer của OBS).

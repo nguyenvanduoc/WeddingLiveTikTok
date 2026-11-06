@@ -43,6 +43,8 @@
       return new Promise((resolve, reject) => {
         const a = new Audio(url);
         a.volume = cfg.volume ?? 1;
+        a.preservesPitch = true;                 // đọc nhanh mà không bị the thé
+        a.playbackRate = cfg.clientSpeed || 1;   // giọng Google Translate: tăng tốc khi phát
         a.onended = () => resolve();
         a.onerror = () => reject(new Error('audio-error'));
         a.play().then(onStart).catch(reject);   // NotAllowedError = trình duyệt chặn tự phát âm thanh
@@ -57,6 +59,7 @@
         const vi = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('vi'));
         if (vi) u.voice = vi;
         u.volume = cfg.volume ?? 1;
+        u.rate = cfg.speed || 1;
         const done = () => { clearTimeout(timer); resolve(); };
         const timer = setTimeout(done, 20000);
         u.onend = done; u.onerror = done;

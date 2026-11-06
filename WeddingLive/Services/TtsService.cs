@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
+using System.Net.Http.Json;
 using System.Security;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WeddingLive.Models;
 
@@ -35,14 +37,23 @@ public class TtsService
     public string? LastError { get; private set; }
     public DateTime? LastErrorAt { get; private set; }
 
-    /// <summary>Nhà cung cấp thực tế sẽ dùng: "google" | "azure" | "browser".</summary>
+    /// <summary>Nhà cung cấp thực tế sẽ dùng: "google" | "azure" | "googlecloud" | "browser".</summary>
     public string ResolveProvider()
     {
         var o = _options.CurrentValue;
         var p = (o.Provider ?? "auto").Trim().ToLowerInvariant();
-        if (p == "auto") return string.IsNullOrWhiteSpace(o.AzureKey) ? "google" : "azure";
-        return p is "google" or "azure" or "browser" ? p : "google";
+        if (p == "auto")
+            return !string.IsNullOrWhiteSpace(o.AzureKey) ? "azure"
+                 : !string.IsNullOrWhiteSpace(o.GoogleCloudKey) ? "googlecloud"
+                 : "google";
+        return p is "google" or "azure" or "googlecloud" or "browser" ? p : "google";
     }
+
+    /// <summary>
+    /// Giọng nào tự chỉnh được tốc độ khi tạo file (Azure, Google Cloud). Giọng Google Translate
+    /// không chỉnh được => trình duyệt tự phát nhanh hơn (playbackRate, giữ nguyên cao độ).
+    /// </summary>
+    public bool ProviderHandlesSpeed => ResolveProvider() is "azure" or "googlecloud";
 
     public async Task<byte[]?> SynthesizeAsync(string text, CancellationToken ct)
     {
@@ -51,14 +62,38 @@ public class TtsService
         if (provider == "browser") return null;
 
         var o = _options.CurrentValue;
-        var key = provider == "azure" ? $"azure|{o.AzureVoice}|{o.AzureRate}|{text}" : $"google|{text}";
+        var speed = o.ClampedSpeed;
+        var key = provider switch
+        {
+            "azure" => $"azure|{o.AzureVoice}|{speed}|{text}",
+            "googlecloud" => $"gcloud|{o.GoogleCloudVoice}|{speed}|{text}",
+            _ => $"google|{text}"
+        };
         if (_cache.TryGetValue(key, out var cached)) return cached;
 
         await _gate.WaitAsync(ct);
         try
         {
-            var audio = provider == "azure" ? await AzureAsync(text, o, ct) : await GoogleAsync(text, ct);
-            LastError = null;
+            byte[] audio;
+            try
+            {
+                audio = provider switch
+                {
+                    "azure" => await AzureAsync(text, o, speed, ct),
+                    "googlecloud" => await GoogleCloudAsync(text, o, speed, ct),
+                    _ => await GoogleAsync(text, ct)
+                };
+                LastError = null;
+            }
+            catch (Exception ex) when (provider != "google" && !ct.IsCancellationRequested)
+            {
+                // Giọng trả phí/có key lỗi (sai key, hết hạn mức...) => dùng tạm Google miễn phí để MC không bị im
+                _logger.LogWarning("TTS ({Provider}) lỗi: {Message} => dùng tạm Google Translate", provider, ex.Message);
+                LastError = $"{provider}: {ex.Message} (đang dùng tạm giọng Google)";
+                LastErrorAt = DateTime.Now;
+                return await GoogleAsync(text, ct);   // không lưu cache để lần sau thử lại giọng chính
+            }
+
             if (_cache.Count >= MaxCacheItems) _cache.Clear();
             _cache[key] = audio;
             return audio;
@@ -91,12 +126,13 @@ public class TtsService
     }
 
     // ---------------- Azure Speech ----------------
-    private async Task<byte[]> AzureAsync(string text, VoiceOptions o, CancellationToken ct)
+    private async Task<byte[]> AzureAsync(string text, VoiceOptions o, double speed, CancellationToken ct)
     {
+        var rate = $"{Math.Round((speed - 1) * 100):+0;-0;0}%";   // 1.2 => "+20%"
         var ssml = $"""
             <speak version="1.0" xml:lang="vi-VN">
               <voice name="{SecurityElement.Escape(o.AzureVoice)}">
-                <prosody rate="{SecurityElement.Escape(o.AzureRate)}">{SecurityElement.Escape(text)}</prosody>
+                <prosody rate="{rate}">{SecurityElement.Escape(text)}</prosody>
               </voice>
             </speak>
             """;
@@ -112,6 +148,27 @@ public class TtsService
         if (!res.IsSuccessStatusCode)
             throw new HttpRequestException($"Azure trả về HTTP {(int)res.StatusCode} (kiểm tra AzureKey / AzureRegion)");
         return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    // ---------------- Google Cloud Text-to-Speech ----------------
+    private async Task<byte[]> GoogleCloudAsync(string text, VoiceOptions o, double speed, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "https://texttospeech.googleapis.com/v1/text:synthesize")
+        {
+            Content = JsonContent.Create(new
+            {
+                input = new { text },
+                voice = new { languageCode = "vi-VN", name = o.GoogleCloudVoice },
+                audioConfig = new { audioEncoding = "MP3", speakingRate = speed }
+            })
+        };
+        req.Headers.Add("X-Goog-Api-Key", o.GoogleCloudKey);
+
+        using var res = await Http.SendAsync(req, ct);
+        if (!res.IsSuccessStatusCode)
+            throw new HttpRequestException($"Google Cloud trả về HTTP {(int)res.StatusCode} (kiểm tra GoogleCloudKey, đã bật Text-to-Speech API chưa)");
+        using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        return Convert.FromBase64String(doc.RootElement.GetProperty("audioContent").GetString() ?? "");
     }
 
     /// <summary>Cắt câu dài thành đoạn ≤ max ký tự, ưu tiên cắt ở dấu câu rồi tới khoảng trắng.</summary>

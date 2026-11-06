@@ -33,6 +33,9 @@ public static class VoiceEndpoints
                 o.Enabled,
                 Provider = tts.ResolveProvider(),
                 Volume = Math.Clamp(o.Volume, 0, 1),
+                Speed = o.ClampedSpeed,
+                // Trình duyệt tự tăng tốc khi phát nếu giọng không tự chỉnh được tốc độ
+                ClientSpeed = tts.ProviderHandlesSpeed ? 1.0 : o.ClampedSpeed,
                 AnnounceIntervalSeconds = Math.Max(0, o.AnnounceIntervalSeconds),
                 o.ThankFollow,
                 Announcements = Or(o.Announcements, VoiceOptions.DefaultAnnouncements),
@@ -49,6 +52,7 @@ public static class VoiceEndpoints
         {
             opt.CurrentValue.Enabled,
             Provider = tts.ResolveProvider(),
+            Speed = opt.CurrentValue.ClampedSpeed,
             tts.LastError,
             tts.LastErrorAt,
             Stages = stages.All().Select(s => new { s.VoiceOn, s.State, s.UserAgent, s.Since })

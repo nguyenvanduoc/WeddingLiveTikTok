@@ -11,10 +11,11 @@ public class VoiceOptions
     public bool Enabled { get; set; } = true;
 
     /// <summary>
-    /// auto    = có AzureKey thì dùng Azure, không thì Google
-    /// google  = Google Translate TTS (miễn phí, không cần key)
-    /// azure   = Azure Speech (giọng AI tự nhiên, cần key)
-    /// browser = giọng có sẵn của trình duyệt/Windows (không qua server)
+    /// auto        = có AzureKey => Azure; có GoogleCloudKey => Google Cloud; không có key => Google Translate
+    /// google      = Google Translate TTS (miễn phí, không cần key, 1 giọng nữ)
+    /// azure       = Azure Speech (giọng AI tự nhiên HoaiMy/NamMinh, cần key, miễn phí 500k ký tự/tháng)
+    /// googlecloud = Google Cloud Text-to-Speech (giọng Neural2/WaveNet, cần API key)
+    /// browser     = giọng có sẵn của trình duyệt/Windows (không qua server)
     /// </summary>
     public string Provider { get; set; } = "auto";
 
@@ -22,8 +23,15 @@ public class VoiceOptions
     public string AzureRegion { get; set; } = "southeastasia";
     /// <summary>vi-VN-HoaiMyNeural (nữ) hoặc vi-VN-NamMinhNeural (nam).</summary>
     public string AzureVoice { get; set; } = "vi-VN-HoaiMyNeural";
-    /// <summary>Tốc độ đọc Azure, ví dụ "0%", "+10%", "-10%".</summary>
-    public string AzureRate { get; set; } = "0%";
+
+    public string GoogleCloudKey { get; set; } = "";
+    /// <summary>vi-VN-Neural2-A (nữ), vi-VN-Neural2-D (nam), vi-VN-Wavenet-A..D...</summary>
+    public string GoogleCloudVoice { get; set; } = "vi-VN-Neural2-A";
+
+    /// <summary>Tốc độ đọc: 1.0 = bình thường, 1.2 = nhanh hơn 20% (0.5 - 2.0). Áp dụng cho mọi giọng.</summary>
+    public double Speed { get; set; } = 1.2;
+
+    public double ClampedSpeed => Math.Clamp(Speed <= 0 ? 1 : Speed, 0.5, 2.0);
 
     /// <summary>Âm lượng 0.0 - 1.0.</summary>
     public double Volume { get; set; } = 1.0;

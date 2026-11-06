@@ -60,6 +60,7 @@
   };
 
   // ---------------- Giọng đọc: phát thử + chẩn đoán ----------------
+  let clientSpeed = 1;
   async function playTts(text) {
     const t0 = performance.now();
     const res = await fetch('/api/tts?text=' + encodeURIComponent(text));
@@ -67,6 +68,8 @@
     if (!res.ok) throw new Error(`Server không tạo được giọng (HTTP ${res.status}). Xem dòng "TTS ... lỗi" trong cửa sổ dotnet run.`);
     const blob = await res.blob();
     const audio = new Audio(URL.createObjectURL(blob));
+    audio.preservesPitch = true;
+    audio.playbackRate = clientSpeed;   // giống tốc độ phát trên sân khấu
     await audio.play();
     return { ms: Math.round(performance.now() - t0), kb: Math.round(blob.size / 1024) };
   }
@@ -144,7 +147,8 @@
   // Câu mẫu lấy từ cấu hình giọng đọc: bấm để đưa vào ô MC
   Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])
     .then(([w, v]) => {
-      $('voiceInfo').textContent = v.enabled ? `(giọng: ${v.provider})` : '(đang tắt – Voice:Enabled = false)';
+      clientSpeed = v.clientSpeed || 1;
+      $('voiceInfo').textContent = v.enabled ? `(giọng: ${v.provider}, tốc độ x${v.speed})` : '(đang tắt – Voice:Enabled = false)';
       const fill = (t) => t.replaceAll('{bride}', w.brideName).replaceAll('{groom}', w.groomName);
       (v.announcements || []).slice(0, 7).forEach((t, i) => {
         const b = document.createElement('button');
