@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đám Cưới Online – Điều khiển</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header>
+    <h1>💍 Bảng điều khiển</h1>
+    <div id="status" class="status off">⚪ Bridge TikTok: chưa kết nối</div>
+  </header>
+
+  <main>
+    <section class="preview">
+      <iframe src="/" title="Sân khấu"></iframe>
+      <p class="hint">Link sân khấu cho OBS / TikTok LIVE Studio (Browser Source 1280×720):
+        <code id="stageUrl"></code><br>Nền trong suốt: thêm <code>?bg=0</code></p>
+    </section>
+
+    <section class="panel">
+      <label>API Key <small>(nếu có cấu hình Wedding:ApiKey)</small>
+        <input id="apiKey" type="password" placeholder="để trống nếu không dùng">
+      </label>
+
+      <h2>🎁 Giả lập tặng quà</h2>
+      <div class="row">
+        <input id="nick" placeholder="Tên người tặng" value="Lan Phương">
+        <select id="gift">
+          <option value="Rose|1">🌹 Rose (1💎)</option>
+          <option value="Heart Me|1">💗 Heart Me (1💎)</option>
+          <option value="Finger Heart|5">🫰 Finger Heart (5💎)</option>
+          <option value="Perfume|20">🌸 Perfume (20💎)</option>
+          <option value="Doughnut|30">🍩 Doughnut (30💎)</option>
+          <option value="Hand Hearts|100">🫶 Hand Hearts (100💎)</option>
+          <option value="Rainbow|199">🌈 Rainbow (199💎)</option>
+          <option value="Galaxy|1000">🌌 Galaxy (1000💎)</option>
+          <option value="Lion|29999">🦁 Lion (29999💎)</option>
+        </select>
+        <input id="count" type="number" min="1" value="1" class="small">
+      </div>
+      <div class="row">
+        <button data-act="gift">Tặng</button>
+        <button data-act="random10" class="alt">10 quà ngẫu nhiên</button>
+        <button data-act="spam50" class="alt">Spam 50 quà</button>
+      </div>
+
+      <h2>💬 Bình luận / ❤️ Tim / ⭐ Follow</h2>
+      <div class="row">
+        <input id="comment" placeholder="Nội dung bình luận" value="Chúc mừng hạnh phúc! 🥰">
+        <button data-act="chat">Gửi</button>
+      </div>
+      <div class="row">
+        <button data-act="like" class="alt">Thả 10 tim</button>
+        <button data-act="follow" class="alt">Follow</button>
+        <button data-act="share" class="alt">Share</button>
+      </div>
+
+      <h2>⚙️ Khác</h2>
+      <div class="row">
+        <button data-act="reset" class="danger">Reset bảng xếp hạng + tên khách</button>
+      </div>
+      <pre id="log"></pre>
+    </section>
+  </main>
+
+  <script src="lib/signalr.min.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

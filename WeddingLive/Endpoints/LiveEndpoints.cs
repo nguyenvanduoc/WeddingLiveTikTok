@@ -1,0 +1,138 @@
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
+using WeddingLive.Hubs;
+using WeddingLive.Models;
+using WeddingLive.Services;
+
+namespace WeddingLive.Endpoints;
+
+/// <summary>
+/// Các API nhận sự kiện từ bên ngoài:
+/// - tiktok-bridge (Node.js) gửi POST JSON
+/// - TikFinity / Streamer.bot gọi webhook GET có query string
+/// - trang admin.html bấm nút giả lập quà
+/// </summary>
+public static class LiveEndpoints
+{
+    public static IEndpointRouteBuilder MapLiveEndpoints(this IEndpointRouteBuilder app)
+    {
+        // Cấu hình cho trang sân khấu (không cần key, không có thông tin bí mật)
+        app.MapGet("/api/config", (IOptionsMonitor<WeddingOptions> o) => Results.Ok(new
+        {
+            o.CurrentValue.BrideName,
+            o.CurrentValue.GroomName,
+            o.CurrentValue.Title,
+            GuestCount = Math.Clamp(o.CurrentValue.GuestCount, 4, 24),
+            o.CurrentValue.BigGiftDiamonds
+        }));
+
+        var api = app.MapGroup("/api/events").AddEndpointFilter<ApiKeyFilter>();
+
+        // ---- Quà ----
+        api.MapPost("/gift", async (GiftEvent gift, GiftQueueService queue) =>
+        {
+            gift = Normalize(gift);
+            await queue.EnqueueAsync(gift);
+            return Results.Accepted(value: new { queued = true, pending = queue.Pending });
+        });
+
+        // ---- Bình luận / tim / follow: không cần xếp hàng, đẩy thẳng ----
+        api.MapPost("/chat", async (ChatEvent e, IHubContext<WeddingHub> hub) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Comment)) return Results.BadRequest();
+            e = e with { Nickname = Clean(e.Nickname, e.UserId), Comment = Truncate(e.Comment.Trim(), 80) };
+            await hub.Clients.All.SendAsync("ChatReceived", e);
+            return Results.Ok();
+        });
+
+        api.MapPost("/like", async (LikeEvent e, IHubContext<WeddingHub> hub) =>
+        {
+            e = e with { Nickname = Clean(e.Nickname, e.UserId), LikeCount = Math.Clamp(e.LikeCount, 1, 50) };
+            await hub.Clients.All.SendAsync("LikeReceived", e);
+            return Results.Ok();
+        });
+
+        api.MapPost("/social", async (SocialEvent e, IHubContext<WeddingHub> hub) =>
+        {
+            e = e with { Nickname = Clean(e.Nickname, e.UserId) };
+            await hub.Clients.All.SendAsync("SocialReceived", e);
+            return Results.Ok();
+        });
+
+        // ---- Bridge báo trạng thái kết nối TikTok ----
+        api.MapPost("/status", async (BridgeStatus s, BridgeStatusStore store, IHubContext<WeddingHub> hub) =>
+        {
+            store.Current = s;
+            await hub.Clients.All.SendAsync("BridgeStatus", s);
+            return Results.Ok();
+        });
+
+        // ---- Webhook dạng GET cho TikFinity / Streamer.bot ----
+        // Ví dụ: /api/events/webhook/gift?key=XXX&username={username}&nickname={nickname}&gift={giftname}&count={repeatcount}&coins={coins}
+        api.MapGet("/webhook/gift", async (string? username, string? nickname, string? gift,
+            int? count, int? coins, GiftQueueService queue) =>
+        {
+            var g = Normalize(new GiftEvent
+            {
+                UserId = username ?? "",
+                Nickname = nickname ?? "",
+                GiftName = gift ?? "Gift",
+                Count = count ?? 1,
+                DiamondValue = coins ?? 1
+            });
+            await queue.EnqueueAsync(g);
+            return Results.Ok(new { queued = true });
+        });
+
+        // ---- Admin: xóa bảng xếp hạng + reset tên khách ----
+        api.MapPost("/reset", async (LeaderboardService lb, IHubContext<WeddingHub> hub) =>
+        {
+            lb.Clear();
+            await hub.Clients.All.SendAsync("ResetStage");
+            await hub.Clients.All.SendAsync("Leaderboard", lb.Top(5));
+            return Results.Ok();
+        });
+
+        return app;
+    }
+
+    private static GiftEvent Normalize(GiftEvent g) => g with
+    {
+        Nickname = Clean(g.Nickname, g.UserId),
+        GiftName = string.IsNullOrWhiteSpace(g.GiftName) ? "Gift" : Truncate(g.GiftName.Trim(), 30),
+        Count = Math.Clamp(g.Count, 1, 9999),
+        DiamondValue = Math.Max(0, g.DiamondValue)
+    };
+
+    private static string Clean(string? nickname, string? userId)
+    {
+        var name = string.IsNullOrWhiteSpace(nickname) ? userId : nickname;
+        return Truncate((name ?? "Khách").Trim(), 24);
+    }
+
+    private static string Truncate(string s, int max) =>
+        s.Length <= max ? s : s[..max] + "…";
+}
+
+/// <summary>
+/// Kiểm tra khóa bí mật: header "X-Api-Key" hoặc query "?key=".
+/// Nếu Wedding:ApiKey để trống thì cho qua (tiện test local).
+/// </summary>
+public class ApiKeyFilter : IEndpointFilter
+{
+    private readonly IOptionsMonitor<WeddingOptions> _options;
+    public ApiKeyFilter(IOptionsMonitor<WeddingOptions> options) => _options = options;
+
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext ctx, EndpointFilterDelegate next)
+    {
+        var expected = _options.CurrentValue.ApiKey;
+        if (!string.IsNullOrEmpty(expected))
+        {
+            var req = ctx.HttpContext.Request;
+            var provided = req.Headers["X-Api-Key"].FirstOrDefault() ?? req.Query["key"].FirstOrDefault();
+            if (!string.Equals(provided, expected, StringComparison.Ordinal))
+                return Results.Unauthorized();
+        }
+        return await next(ctx);
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "tiktok-bridge",
+  "version": "1.0.0",
+  "description": "Nhận sự kiện TikTok Live (quà, bình luận, tim, follow) và chuyển sang server .NET WeddingLive",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "tiktok-live-connector": "^2.5.0"
+  }
+}
