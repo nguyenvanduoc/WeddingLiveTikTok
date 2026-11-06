@@ -118,3 +118,8 @@ label.speed .ticks { display: flex; justify-content: space-between; font-size: 1
 .diaggrid > div { background: #1f1330; border-radius: 8px; padding: 8px 10px; line-height: 1.6; }
 #diagRecent { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); max-height: 180px; overflow: auto; }
 #diagRecent b { color: var(--text); }
+
+ul.songs { list-style: none; padding: 0; margin: 0 0 8px; font-size: 14px; }
+ul.songs li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; background: #1f1330; margin-bottom: 4px; }
+ul.songs li button { padding: 2px 8px; font-size: 12px; background: #5a2333; }
+#songFiles { flex: 1 1 200px; }

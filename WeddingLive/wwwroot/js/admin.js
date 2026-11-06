@@ -57,6 +57,19 @@
       catch (e) { log('❌ ' + e.message); }
     },
     diagnose: () => diagnose(),
+    uploadSongs: async () => {
+      const files = $('songFiles').files;
+      if (!files.length) { log('❌ Chưa chọn file nhạc'); return; }
+      const fd = new FormData();
+      [...files].forEach(f => fd.append('files', f));
+      log(`⬆️ Đang tải ${files.length} bài lên…`);
+      const res = await fetch('/api/music/upload', { method: 'POST', headers: { 'X-Api-Key': $('apiKey').value }, body: fd });
+      if (!res.ok) { log(`❌ Tải lên lỗi: HTTP ${res.status}${res.status === 404 ? ' – ' + OLD_SERVER : ''}`); return; }
+      const r = await res.json();
+      log(r.saved.length ? `✅ Đã thêm: ${r.saved.join(', ')}` : '❌ Không có file hợp lệ (.mp3 .ogg .m4a .wav, tối đa 50MB)');
+      $('songFiles').value = '';
+      refreshSongs();
+    },
     musicPlay: async () => { if (await post('music', { action: 'play' })) log('🎵 Phát nhạc'); },
     musicStop: async () => { if (await post('music', { action: 'stop' })) log('⏹ Dừng nhạc'); },
     hug: async () => { if (await post('couple', { action: 'hug' })) log('💋 Thử ôm hôn'); },
@@ -130,6 +143,32 @@
   }
   checkServerVersion();
   setInterval(checkServerVersion, 10000);
+
+  // ---------------- Danh sách bài hát ----------------
+  async function refreshSongs() {
+    try {
+      const songs = await (await fetch('/api/music')).json();
+      $('songInfo').innerHTML = songs.length
+        ? `🎤 Có <b>${songs.length}</b> bài hát – sân khấu phát xáo trộn các bài này.`
+        : '🎹 Chưa có bài hát nào → đang phát <b>nhạc không lời</b> tự tạo (Wagner, Pachelbel). Tải bài hát có lời lên bên dưới.';
+      $('songList').innerHTML = '';
+      songs.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = '🎵 ' + name;
+        const del = document.createElement('button');
+        del.textContent = '✖ Xóa';
+        del.onclick = async () => {
+          if (!confirm('Xóa bài ' + name + '?')) return;
+          const res = await fetch('/api/music/' + encodeURIComponent(name), { method: 'DELETE', headers: { 'X-Api-Key': $('apiKey').value } });
+          log(res.ok ? '🗑️ Đã xóa ' + name : '❌ Xóa lỗi: HTTP ' + res.status);
+          refreshSongs();
+        };
+        li.appendChild(del);
+        $('songList').appendChild(li);
+      });
+    } catch { $('songInfo').textContent = 'Không đọc được danh sách bài.'; }
+  }
+  refreshSongs();
 
   // ---------------- 📡 Chẩn đoán kết nối TikTok ----------------
   const ago = (s) => s == null ? 'chưa bao giờ' : s < 60 ? `${s} giây trước` : `${Math.round(s / 60)} phút trước`;

@@ -68,7 +68,10 @@
       document.body.appendChild(btn);
     }
     const vol = () => Math.max(0, Math.min(1, getCfg().musicVolume ?? 0.35));
-    const target = () => vol() * (ducked ? 0.3 : 1);
+    // MC nói => nhạc giảm còn musicDuck (mặc định 12%) để giọng MC luôn to hơn nhạc
+    const duckLevel = () => Math.max(0, Math.min(1, getCfg().musicDuck ?? 0.12));
+    const target = () => vol() * (ducked ? duckLevel() : 1);
+    let fadeIv = null;
 
     async function loadFiles() {
       try { files = await (await fetch('/api/music')).json(); } catch { files = []; }
@@ -208,8 +211,20 @@
       /** MC đang nói => nhạc nhỏ lại. */
       duck(on) {
         ducked = on;
-        if (audio) audio.volume = target();
-        if (master && ctx) master.gain.setTargetAtTime(target(), ctx.currentTime, 0.15);
+        // Giảm nhanh (~0,1s) khi MC bắt đầu nói, tăng lại chậm (~0,8s) khi MC nói xong
+        if (master && ctx) master.gain.setTargetAtTime(target(), ctx.currentTime, on ? 0.04 : 0.25);
+        if (audio) {
+          clearInterval(fadeIv);
+          if (on) audio.volume = target();
+          else {
+            const to = target(); let v = audio.volume;
+            fadeIv = setInterval(() => {
+              if (!audio) return clearInterval(fadeIv);
+              v = Math.min(to, v + to / 8); audio.volume = v;
+              if (v >= to) clearInterval(fadeIv);
+            }, 100);
+          }
+        }
       }
     };
   }

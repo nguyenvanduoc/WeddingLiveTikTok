@@ -988,13 +988,14 @@
         try {
           const c = await (await fetch('/api/config')).json();
           ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
-           'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicMaxSeconds', 'musicStopOnGift', 'danceMusicSeconds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
+           'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicDuck', 'musicMaxSeconds', 'musicStopOnGift', 'danceMusicSeconds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
           music.duck(false);                             // áp âm lượng mới ngay
           music.setOff(!MUSIC_ON());
         } catch { }
       });
       conn.on('LoveMeter', m => this.onMeter(m, false));    // mở trang / reset
       conn.on('CoupleAction', a => this.queueCouple(a.action));   // admin bấm thử
+      conn.on('MusicLibraryChanged', () => music.reload());   // admin vừa tải lên / xóa bài
       conn.on('Music', m => { if (m.action === 'stop') music.stop(true); else { music.reload(); this.playMusic(); } });
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 

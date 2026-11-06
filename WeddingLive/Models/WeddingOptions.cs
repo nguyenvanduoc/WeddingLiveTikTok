@@ -65,7 +65,9 @@ public class WeddingOptions
     /// <summary>Thanh tình yêu đầy => phát nhạc cho cô dâu chú rể khiêu vũ trong chừng này giây.</summary>
     public int DanceMusicSeconds { get; set; } = 60;
     /// <summary>Âm lượng nhạc 0 - 1 (MC nói thì nhạc tự nhỏ lại).</summary>
-    public double MusicVolume { get; set; } = 0.35;
+    public double MusicVolume { get; set; } = 0.25;
+    /// <summary>Khi MC nói, nhạc giảm còn tỉ lệ này của âm lượng nhạc (0.12 = còn 12%) để giọng MC rõ.</summary>
+    public double MusicDuck { get; set; } = 0.12;
     /// <summary>Bài (file) dài hơn thì nhỏ dần rồi dừng sau chừng này giây.</summary>
     public int MusicMaxSeconds { get; set; } = 90;
 

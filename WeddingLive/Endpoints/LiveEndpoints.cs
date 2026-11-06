@@ -36,6 +36,7 @@ public static class LiveEndpoints
             o.CurrentValue.MusicStopOnGift,
             DanceMusicSeconds = Math.Clamp(o.CurrentValue.DanceMusicSeconds, 10, 300),
             MusicVolume = Math.Clamp(o.CurrentValue.MusicVolume, 0, 1),
+            MusicDuck = Math.Clamp(o.CurrentValue.MusicDuck, 0, 1),
             MusicMaxSeconds = Math.Clamp(o.CurrentValue.MusicMaxSeconds, 10, 600)
         }));
 
@@ -126,6 +127,41 @@ public static class LiveEndpoints
                 .Where(f => ext.Contains(Path.GetExtension(f).ToLowerInvariant()))
                 .Select(Path.GetFileName).OrderBy(f => f).ToArray());
         });
+        // ---- Tải bài hát lên / xóa bài (từ trang admin) ----
+        var musicExt = new[] { ".mp3", ".ogg", ".m4a", ".wav" };
+        app.MapPost("/api/music/upload", async (HttpRequest request, IWebHostEnvironment env, IHubContext<WeddingHub> hub) =>
+        {
+            if (!request.HasFormContentType) return Results.BadRequest("Cần gửi file dạng form");
+            var form = await request.ReadFormAsync();
+            var dir = Path.Combine(env.WebRootPath, "music");
+            Directory.CreateDirectory(dir);
+            var saved = new List<string>();
+            foreach (var file in form.Files)
+            {
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!musicExt.Contains(ext) || file.Length == 0 || file.Length > 50 * 1024 * 1024) continue;
+                // Tên file an toàn: bỏ đường dẫn + ký tự lạ, giữ chữ (kể cả tiếng Việt), số, khoảng trắng, - _ ( )
+                var name = System.Text.RegularExpressions.Regex.Replace(Path.GetFileNameWithoutExtension(file.FileName), @"[^\p{L}\p{N} _\-()]", "").Trim();
+                if (name.Length == 0) name = "bai-hat";
+                var path = Path.Combine(dir, name + ext);
+                await using (var fs = File.Create(path)) await file.CopyToAsync(fs);
+                saved.Add(name + ext);
+            }
+            if (saved.Count > 0) await hub.Clients.All.SendAsync("MusicLibraryChanged");
+            return Results.Ok(new { saved });
+        }).AddEndpointFilter<ApiKeyFilter>().DisableAntiforgery()
+          .WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(200L * 1024 * 1024));
+
+        app.MapDelete("/api/music/{name}", async (string name, IWebHostEnvironment env, IHubContext<WeddingHub> hub) =>
+        {
+            var file = Path.GetFileName(name);                    // chặn ../ đường dẫn
+            var path = Path.Combine(env.WebRootPath, "music", file);
+            if (!musicExt.Contains(Path.GetExtension(file).ToLowerInvariant()) || !File.Exists(path)) return Results.NotFound();
+            File.Delete(path);
+            await hub.Clients.All.SendAsync("MusicLibraryChanged");
+            return Results.Ok();
+        }).AddEndpointFilter<ApiKeyFilter>();
+
         api.MapPost("/music", async (MusicRequest req, IHubContext<WeddingHub> hub) =>
         {
             if (req.Action is not ("play" or "stop")) return Results.BadRequest("action = play | stop");
