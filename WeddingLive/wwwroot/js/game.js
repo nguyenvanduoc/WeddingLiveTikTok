@@ -70,8 +70,9 @@
       this.drawHud();
       this.makeEffects();
       this.connectSignalR();
+      this.startIdleLoop();
       // MC không đọc lời giới thiệu khi đang có khách lên tặng quà
-      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy));
+      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy && !g.npcTrip));   // khách mời tự lên không chặn MC
     }
 
     // ---------------- Texture dùng cho hiệu ứng hạt ----------------
@@ -375,6 +376,49 @@
       }
     }
 
+    // =================================================================
+    //  SÂN KHẤU VẮNG: khách mời tự hoạt động (KHÔNG giả quà / người xem)
+    //  Ưu tiên TikTok: chỉ chạy khi IdleAfterSeconds giây không có quà/bình luận/follow thật,
+    //  không chạy khi còn quà chờ, luôn chừa ít nhất 2 chỗ trên sân khấu cho người tặng thật.
+    // =================================================================
+    startIdleLoop() {
+      this.lastReal = performance.now();
+      this.idleNext = 0;
+      const tick = () => { this.idleTick(); this.after(1000, tick); };
+      tick();
+    }
+
+    idleTick() {
+      if (cfg.idleActivity === false) return;
+      const now = performance.now();
+      if (now - this.lastReal < (cfg.idleAfterSeconds ?? 6) * 1000) return;   // vừa có hoạt động thật
+      if (now < this.idleNext || this.queue.length || this.coupleBusy) return;
+      this.idleNext = now + (cfg.idleEverySeconds ?? 4) * 1000 * (0.7 + Math.random() * 0.6);
+      const r = Math.random();
+      if (r < 0.5) this.npcVisit();
+      else if (r < 0.88) this.npcChat();
+      else { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
+    }
+
+    npcVisit() {
+      const free = this.slots.filter(s => !s.busy);
+      if (free.length < 2) return;                   // chừa chỗ cho người tặng thật
+      // Chỉ khách chưa mang tên người tặng thật (không để tên người thật "tặng thêm" giả)
+      const idle = this.guests.filter(g => !g.busy && !g.bubble && !g.userId);
+      if (!idle.length) return;
+      const guest = Phaser.Utils.Array.GetRandom(idle);
+      this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji: Phaser.Utils.Array.GetRandom(['💐', '💐', '🥂', '🎁', '🌹']) });
+      if (Math.random() < 0.6) voice.idleLine();     // MC mời gọi người xem trên live
+    }
+
+    npcChat() {
+      const idle = this.guests.filter(g => !g.busy && !g.bubble && !g.userId);
+      if (!idle.length) return;
+      const wishes = ['Chúc mừng hạnh phúc! 🥰', 'Trăm năm hạnh phúc nha!', 'Đẹp đôi quá trời 😍', 'Nâng ly nào! 🥂',
+        'Sớm có em bé nhé 👶', 'Cô dâu xinh quá!', 'Chú rể bảnh ghê 😎', 'Yêu nhau mãi mãi nha ❤️', 'Dzô dzô dzô! 🍻', 'Hạnh phúc quá đi!'];
+      this.showBubble(Phaser.Utils.Array.GetRandom(idle), Phaser.Utils.Array.GetRandom(wishes));
+    }
+
     // ---------------- Cô dâu chú rể: ôm hôn / khiêu vũ ----------------
     queueCouple(action) {
       this.coupleQueue.push(action);
@@ -494,6 +538,7 @@
     //  XỬ LÝ QUÀ
     // =================================================================
     onGift(gift) {
+      this.lastReal = performance.now();             // có quà thật => khách mời ngừng tự hoạt động
       // Gộp quà trùng (cùng người, cùng loại) đang chờ để hàng đợi không quá dài
       const same = this.queue.find(q => q.userId === gift.userId && q.giftName === gift.giftName);
       if (same) {
@@ -535,16 +580,19 @@
 
     sendGuest(guest, slot, gift) {
       guest.busy = true; slot.busy = true;
-      guest.userId = gift.userId;
-      guest.lastUsed = performance.now();
-      const max = guest.compact ? 12 : 24;
-      guest.label.setText(gift.nickname.length > max ? gift.nickname.slice(0, max) + '…' : gift.nickname);
-      guest.label.setVisible(true);
-      this.tweens.add({ targets: guest, labelPop: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.out' });
+      guest.npcTrip = !!gift.npc;
+      if (!gift.npc) {                               // quà thật: khách nhận tên người tặng
+        guest.userId = gift.userId;
+        guest.lastUsed = performance.now();
+        const max = guest.compact ? 12 : 24;
+        guest.label.setText(gift.nickname.length > max ? gift.nickname.slice(0, max) + '…' : gift.nickname);
+        guest.label.setVisible(true);
+        this.tweens.add({ targets: guest, labelPop: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.out' });
+      }
 
-      const emoji = giftEmoji(gift.giftName);
+      const emoji = gift.npc ? gift.emoji : giftEmoji(gift.giftName);
       guest.gift.setText(emoji);
-      voice.announceGift(gift);                    // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
+      if (!gift.npc) voice.announceGift(gift);     // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
 
       // Hàng đợi dài => đi nhanh hơn
       const speed = (cfg.walkSpeed || 240) * (1 + Math.min(this.queue.length, 8) * 0.05);   // quà dồn nhiều: nhanh thêm tối đa 40%
@@ -588,7 +636,7 @@
 
     // Đứng trước cô dâu chú rể và trao quà
     present(guest, gift, emoji, slot, onDone) {
-      const big = isBig(gift);
+      const big = !gift.npc && isBig(gift);
       guest.gift.setText('');
       // Quà bay về phía cô dâu (slot trái), chú rể (slot phải) hoặc chính giữa
       const tx = CENTER_X + (slot.x - CENTER_X) * 0.45, ty = 225;
@@ -607,7 +655,13 @@
         targets: fly, x: tx, y: ty, scale: big ? 3 : 2, duration: 650, ease: 'Cubic.out',
         onComplete: () => {
           if (countTxt) this.tweens.add({ targets: countTxt, alpha: 1, duration: 200 });
-          this.hearts.explode(big ? 50 : 18, tx, ty + 10);
+          this.hearts.explode(big ? 50 : gift.npc ? 10 : 18, tx, ty + 10);
+          if (gift.npc) {                            // khách mời tự lên: chỉ chúc mừng, không tính điểm, không banner
+            this.coupleHappy(false);
+            this.tweens.add({ targets: fly, alpha: 0, y: '-=40', delay: 700, duration: 400, onComplete: () => fly.destroy() });
+            this.after(900, onDone);
+            return;
+          }
           // Thanh tình yêu: quà làm đầy thanh => hiện đầy, khiêu vũ xong mới về 0
           const acts = gift.actions || [];
           if (acts.includes('dance')) {
@@ -660,9 +714,14 @@
       if (voice.isBlocked(e)) return;                // có từ cấm: không đọc, không hiện bong bóng
       voice.readChat(e);                             // MC ưu tiên đọc bình luận
       // Khách đang mang tên người đó sẽ nói; nếu chưa có thì 1 khách rảnh bất kỳ nói hộ
+      this.lastReal = performance.now();
       const g = this.guests.find(x => x.userId === e.userId) ||
                 Phaser.Utils.Array.GetRandom(this.guests.filter(x => !x.busy)) || this.guests[0];
-      const text = g.userId === e.userId ? e.comment : `${e.nickname}: ${e.comment}`;
+      this.showBubble(g, g.userId === e.userId ? e.comment : `${e.nickname}: ${e.comment}`);
+    }
+
+    /** Bong bóng chat trên đầu 1 khách (4 giây). */
+    showBubble(g, text) {
       g.bubble?.destroy();
       const bubble = makeLabel(this, text.length > 40 ? text.slice(0, 40) + '…' : text,
         { fontSize: '14px', bg: 0xffffff, bgAlpha: 0.95, color: '#333333' });
@@ -683,6 +742,7 @@
     }
 
     onSocial(e) {
+      this.lastReal = performance.now();
       if (e.action === 'follow') voice.thankFollow(e);
       const icon = { follow: '⭐ vừa theo dõi', share: '🔁 vừa chia sẻ live', join: '👋 vừa vào phòng' }[e.action] || e.action;
       const t = makeLabel(this, `${e.nickname} ${icon}`, { fontSize: '15px', bg: 0x2b2d42, bgAlpha: 0.8 })

@@ -226,6 +226,11 @@
         if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
         enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }), PRIORITY_CHAT, { chat: true });
       },
+      /** Sân khấu vắng: MC mời gọi người xem (chỉ khi MC đang rảnh). */
+      idleLine() {
+        if (playing || queue.length || !cfg.idleLines?.length) return;
+        enqueue(fill(pick(cfg.idleLines), base()), 0.5);
+      },
       /** Cập nhật thanh tình yêu: { points, left, next } (dùng cho {points} {left} {next}). */
       setMeter(m) { meter = m; },
       /** Khích lệ người xem tặng quà (khi thanh tình yêu được 50% / 80%). */

@@ -69,6 +69,8 @@ public class VoiceOptions
     public List<string>? HugLines { get; set; }
     /// <summary>Đọc khi cô dâu chú rể khiêu vũ.</summary>
     public List<string>? DanceLines { get; set; }
+    /// <summary>MC mời gọi người xem khi sân khấu đang vắng (khách mời tự hoạt động).</summary>
+    public List<string>? IdleLines { get; set; }
 
     /// <summary>Tên quà TikTok (tiếng Anh) -> cách đọc tiếng Việt.</summary>
     public Dictionary<string, string>? GiftNames { get; set; }
@@ -142,6 +144,15 @@ public class VoiceOptions
     {
         "Tuyệt vời! Thanh tình yêu đã đầy! Xin mời cô dâu {bride} và chú rể {groom} cùng nhảy điệu valse tình yêu!",
         "Âm nhạc lên nào! Cô dâu chú rể khiêu vũ rồi! Xin một tràng pháo tay thật lớn và cảm ơn tất cả quý vị đã tặng quà!"
+    };
+
+    public static readonly string[] DefaultIdleLines =
+    {
+        "Khách mời đang lên chúc mừng cô dâu chú rể. Quý vị trên live tặng một bông hồng là cũng được mời lên sân khấu đó!",
+        "Bà con cô bác đang chúc phúc rộn ràng! Bạn ơi, bình luận lời chúc của bạn để MC đọc to lên nhé!",
+        "Không khí tiệc cưới đang rất vui! Thả tim cho cô dâu chú rể nào quý vị ơi!",
+        "Ai vừa vào live thì bấm theo dõi và gửi lời chúc cho {bride} và {groom} nha!",
+        "Các khách mời đã lên chúc phúc rồi, còn bạn thì sao? Tặng quà để tên bạn xuất hiện trên sân khấu nhé!"
     };
 
     public static readonly string[] DefaultChatTemplates = { "{name} nói: {comment}", "{name} gửi lời chúc: {comment}", "Bạn {name} bình luận: {comment}" };

@@ -44,6 +44,18 @@ public class WeddingOptions
     /// <summary>Tốc độ đi của khách (pixel/giây). Nhỏ = đi chậm hơn.</summary>
     public int WalkSpeed { get; set; } = 240;
 
+    /// <summary>
+    /// Sân khấu tự sinh động khi vắng: khách mời (NPC, tên "Khách N") tự lên chúc mừng, nói chuyện, tim bay.
+    /// KHÔNG tạo quà/người xem giả, không tính bảng xếp hạng / thanh tình yêu. Có quà/bình luận thật là dừng ngay.
+    /// </summary>
+    public bool IdleActivity { get; set; } = true;
+
+    /// <summary>Bao nhiêu giây không có quà/bình luận thật thì khách mời bắt đầu tự hoạt động.</summary>
+    public int IdleAfterSeconds { get; set; } = 6;
+
+    /// <summary>Khoảng cách trung bình (giây) giữa 2 hoạt động của khách mời.</summary>
+    public int IdleEverySeconds { get; set; } = 4;
+
     /// <summary>Thời gian giãn cách (ms) giữa 2 sự kiện quà gửi xuống trình duyệt.</summary>
     public int DispatchDelayMs { get; set; } = 250;
 }

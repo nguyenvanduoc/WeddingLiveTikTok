@@ -100,6 +100,17 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 2. Muốn nền trong suốt để chồng lên camera: `http://localhost:5000/?bg=0`.
 3. Live dọc 9:16: đặt Browser Source 1280×720 rồi crop/scale theo ý, hoặc sửa `W, H` trong `wwwroot/js/game.js`.
 
+## 🎉 Sân khấu tự sinh động khi vắng (ưu tiên dữ liệu TikTok)
+
+Mới live ít người: sau `IdleAfterSeconds` (6s) không có quà / bình luận / follow thật, **khách mời trong tiệc tự hoạt động**
+khoảng mỗi `IdleEverySeconds` (4s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
+MC mời gọi người xem (`Voice:IdleLines`).
+
+- **Không giả quà / người xem**: khách mời giữ tên "Khách N", không banner "X tặng", không tính bảng xếp hạng / thanh tình yêu,
+  không dùng khách đang mang tên người tặng thật.
+- **Ưu tiên TikTok**: có quà / bình luận thật là dừng ngay; khi còn quà chờ thì không chạy; luôn chừa ≥ 2 chỗ trên sân khấu.
+- Tắt: `"IdleActivity": false` (mục `Wedding`).
+
 ## 💞 Thanh tình yêu: ôm hôn & khiêu vũ
 
 Mỗi quà cộng điểm vào **thanh tình yêu** dưới tên cô dâu chú rể (1 kim cương = 1 điểm, Rose = 1 điểm):
