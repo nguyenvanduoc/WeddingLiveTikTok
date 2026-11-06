@@ -43,6 +43,8 @@ public static class VoiceEndpoints
                 BigGiftThanks = Or(o.BigGiftThanks, VoiceOptions.DefaultBigGiftThanks),
                 GiftAnnounce = Or(o.GiftAnnounce, VoiceOptions.DefaultGiftAnnounce),
                 FollowThanks = Or(o.FollowThanks, VoiceOptions.DefaultFollowThanks),
+                o.GreetJoin,
+                JoinGreetings = Or(o.JoinGreetings, VoiceOptions.DefaultJoinGreetings),
                 o.ReadChat,
                 MaxPendingChats = Math.Clamp(o.MaxPendingChats, 1, 20),
                 MaxChatLength = Math.Clamp(o.MaxChatLength, 20, 300),

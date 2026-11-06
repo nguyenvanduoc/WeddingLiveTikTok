@@ -138,6 +138,9 @@ Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu:
 - Sân khấu lặng **3 giây** → MC nói câu dẫn tiếp (`Voice:Announcements`, `AnnounceIntervalSeconds`) ⇒ nói gần như liên tục.
   Câu có `{top1}` (người tặng nhiều nhất) chỉ đọc khi đã có người tặng.
 - Follow → "Cảm ơn … đã theo dõi kênh!". Admin gõ câu → MC đọc ngay.
+- **Thứ tự ưu tiên của MC**: câu admin gõ > **quà tặng** > ôm hôn/khiêu vũ > **bình luận** > **chào người vào phòng** = cảm ơn follow > khích lệ > khách mời trong tiệc > câu dẫn.
+- **Người mới vào phòng → MC chào nhanh** "Hello Thảo Vy!" (`Voice:JoinGreetings`); nhiều người vào cùng lúc gộp 1 câu
+  ("Chào Vy, Nam, Hà và 3 bạn khác!"), vào lại trong 10 phút không chào lại. Tắt: `"GreetJoin": false` hoặc `GREET_JOIN=false` trong `.env`.
 - **Bình luận trên live → MC ưu tiên đọc** ("Lan Phương nói: Chúc mừng hạnh phúc!"), trước câu dẫn và câu đọc tên người tặng quà.
   Chống spam: tối đa `MaxPendingChats` (4) bình luận mới nhất chờ đọc, cùng người cùng câu trong 30s chỉ đọc 1 lần;
   bỏ emoji, bỏ bình luận có link / toàn emoji, cắt câu dài hơn `MaxChatLength`.

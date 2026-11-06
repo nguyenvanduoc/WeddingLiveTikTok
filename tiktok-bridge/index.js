@@ -28,7 +28,8 @@ const USERNAME = (process.env.TIKTOK_USERNAME || '').trim()
 const SERVER = (process.env.SERVER_URL || 'http://localhost:5000').replace(/\/$/, '');
 const API_KEY = process.env.API_KEY || '';
 const EULER_KEY = process.env.EULER_API_KEY || undefined;
-const SEND_JOIN = process.env.SEND_JOIN === 'true';
+// Gửi sự kiện người vào phòng để MC chào "Hello ...". Mặc định BẬT (GREET_JOIN=false để tắt).
+const SEND_JOIN = process.env.GREET_JOIN !== 'false';
 
 // Chưa điền tên TikTok (hoặc DEMO=true) => chạy chế độ DEMO: tự tạo quà/bình luận giả để test
 const PLACEHOLDER = ['', 'ten_tiktok_cua_ban'];

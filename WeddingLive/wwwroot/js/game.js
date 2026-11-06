@@ -778,6 +778,7 @@
     onSocial(e) {
       this.lastReal = performance.now();
       if (e.action === 'follow') voice.thankFollow(e);
+      if (e.action === 'join') voice.greetJoin(e);   // "Hello Thảo Vy!"
       const icon = { follow: '⭐ vừa theo dõi', share: '🔁 vừa chia sẻ live', join: '👋 vừa vào phòng' }[e.action] || e.action;
       const t = makeLabel(this, `${e.nickname} ${icon}`, { fontSize: '15px', bg: 0x2b2d42, bgAlpha: 0.8 })
         .setDepth(980).setPosition(W + 200, 0);

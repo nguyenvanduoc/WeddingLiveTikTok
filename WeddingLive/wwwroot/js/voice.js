@@ -133,8 +133,31 @@
       pump();
     }
 
+    // ---------------- Chào người vào phòng ----------------
+    const greeted = new Map();                 // người đã chào -> thời điểm
+    let joinBuffer = [], joinTimer = null;
+    function flushJoins() {
+      joinTimer = null;
+      const names = [...new Set(joinBuffer)];
+      joinBuffer = [];
+      if (!names.length || !cfg.joinGreetings?.length) return;
+      // Đã có câu chào đang chờ đọc => gộp thêm tên vào câu đó thay vì xếp thêm câu mới
+      const waiting = queue.find(q => q.join);
+      const all = waiting ? [...new Set([...waiting.names, ...names])] : names;
+      const shown = all.slice(0, 3), more = all.length - shown.length;
+      const tpl = waiting?.tpl || pick(cfg.joinGreetings);
+      const text = fill(tpl, {
+        ...base(),
+        names: more > 0 ? `${shown.join(', ')} và ${more} bạn khác` : shown.join(', ').replace(/, ([^,]*)$/, ' và $1')
+      });
+      if (waiting) { waiting.names = all; waiting.text = text; }
+      else enqueue(text, 2, { join: true, names: all, tpl });
+    }
+
     // ---------------- Bình luận: làm sạch + lọc từ cấm + chống spam ----------------
-    const PRIORITY_CHAT = 2.8;                 // đọc trước câu đọc tên người tặng (2) và ôm hôn/khiêu vũ (2.5), sau admin (3)
+    // Thứ tự ưu tiên (số lớn đọc trước): admin 4 > QUÀ 3.5 > ôm hôn/khiêu vũ 3.3 > BÌNH LUẬN 3
+    //   > CHÀO NGƯỜI VÀO 2 = cảm ơn follow > khích lệ 1 > khách mời 0.6 > mời gọi 0.5 > câu dẫn 0
+    const PRIORITY_CHAT = 3;
     const recentChats = new Map();             // "người|câu" -> thời điểm đã nhận
     const noMarks = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
@@ -245,24 +268,38 @@
       /** Cô dâu chú rể ôm hôn ('hug') / khiêu vũ ('dance'). */
       coupleAction(a) {
         const list = a === 'dance' ? cfg.danceLines : cfg.hugLines;
-        if (list?.length) enqueue(fill(pick(list), base()), 2.5);
+        if (list?.length) enqueue(fill(pick(list), base()), 3.3);
       },
       /** Cập nhật người tặng nhiều nhất (bảng xếp hạng). */
       setTopGifter(name) { topGifter = name ? cleanName(name) : ''; },
       /** Khách bắt đầu lên sân khấu: đọc tên người tặng + quà gì (mỗi quà 1 câu). */
       announceGift(gift) {
-        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), 2);
+        enqueue(fill(pick(cfg.giftAnnounce), giftData(gift)), 3.5);
       },
       /** Khách trao quà xong: quà lớn thì cảm ơn thêm; quà thường cảm ơn khi MC đang rảnh. */
       thankGift(gift, big) {
-        if (big) enqueue(fill(pick(cfg.bigGiftThanks), giftData(gift)), 2);
+        if (big) enqueue(fill(pick(cfg.bigGiftThanks), giftData(gift)), 3.4);
         else if (!playing && !queue.length) enqueue(fill(pick(cfg.giftThanks), giftData(gift)), 1);
       },
       thankFollow(e) {
-        if (cfg.thankFollow && queue.length < 3) enqueue(fill(pick(cfg.followThanks), { ...base(), name: cleanName(e.nickname) }), 1);
+        if (cfg.thankFollow && queue.length < 6) enqueue(fill(pick(cfg.followThanks), { ...base(), name: cleanName(e.nickname) }), 2);
       },
       /** Admin gõ câu cho MC đọc ngay. */
-      speakNow(text) { enqueue(text, 3); },
+      speakNow(text) { enqueue(text, 4); },
+
+      /**
+       * Người mới vào phòng live: MC chào nhanh "Hello {names}!".
+       * Gộp người vào gần nhau thành 1 câu (tối đa 3 tên + "và N bạn khác"); vào lại trong 10 phút không chào lại.
+       */
+      greetJoin(e) {
+        if (cfg.greetJoin === false || isBanned(e?.nickname)) return;
+        const key = e.userId || e.nickname, now = performance.now();
+        if (greeted.get(key) > now - 10 * 60 * 1000) return;
+        greeted.set(key, now);
+        if (greeted.size > 2000) greeted.clear();
+        joinBuffer.push(cleanName(e.nickname));
+        if (!joinTimer) joinTimer = setTimeout(flushJoins, 1500);   // đợi 1,5s gom người vào cùng lúc
+      },
       giftName
     };
   }

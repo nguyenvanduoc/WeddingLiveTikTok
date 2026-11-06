@@ -41,6 +41,11 @@ public class VoiceOptions
 
     public bool ThankFollow { get; set; } = true;
 
+    /// <summary>MC chào nhanh người mới vào phòng live ("Hello {names}!").</summary>
+    public bool GreetJoin { get; set; } = true;
+    /// <summary>Mẫu câu chào người vào phòng. Biến: {names}.</summary>
+    public List<string>? JoinGreetings { get; set; }
+
     /// <summary>MC ưu tiên đọc bình luận trên live (đọc trước câu dẫn và câu đọc tên người tặng quà).</summary>
     public bool ReadChat { get; set; } = true;
     /// <summary>Số bình luận chờ đọc tối đa; nhiều hơn thì bỏ bình luận cũ nhất (chống spam).</summary>
@@ -163,6 +168,8 @@ public class VoiceOptions
         "{name} mang {offer} lên chúc phúc {bride} và {groom}!",
         "Cảm ơn {name} đã lên chúc mừng đôi uyên ương!"
     };
+
+    public static readonly string[] DefaultJoinGreetings = { "Hello {names}!", "Chào {names}!", "Hello {names}, vào chung vui nha!", "Chào mừng {names}!" };
 
     public static readonly string[] DefaultChatTemplates = { "{name} nói: {comment}", "{name} gửi lời chúc: {comment}", "Bạn {name} bình luận: {comment}" };
 

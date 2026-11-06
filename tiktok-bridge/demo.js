@@ -86,10 +86,13 @@ export function runDemo({ post, server, intervalMs = 9000 }) {
       const count = COUNTABLE.includes(giftName) ? rnd([1, 1, 1, 2, 3, 5, 5, 10, 15, 20, 30]) : 1;
       console.log(`🎁 [DEMO] ${user} tặng ${count} x ${giftName}`);
       post('gift', { ...base, giftName, count, diamondValue });
-    } else if (r < 0.88) {
+    } else if (r < 0.8) {
       const comment = rnd(COMMENTS);
       console.log(`💬 [DEMO] ${user}: ${comment}`);
       post('chat', { ...base, comment });
+    } else if (r < 0.93) {
+      console.log(`👋 [DEMO] ${user} vào xem live`);
+      post('social', { ...base, action: 'join' });
     } else {
       console.log(`⭐ [DEMO] ${user} theo dõi`);
       post('social', { ...base, action: 'follow' });
