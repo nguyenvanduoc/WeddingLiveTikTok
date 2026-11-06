@@ -84,6 +84,7 @@ export function runDemo({ post, server, intervalMs = 20000 }) {
   console.log('🧪 CHẾ ĐỘ DEMO – chưa điền TIKTOK_USERNAME trong tiktok-bridge/.env');
   console.log(`   Tự tạo quà/bình luận giả khoảng mỗi ${intervalMs / 1000}s và gửi tới ${server}`);
   console.log('   Muốn kết nối live thật: điền TIKTOK_USERNAME trong .env rồi chạy lại.');
+  console.log('   ⚠️  Sửa file tiktok-bridge\\.env — KHÔNG phải .env.example (file mẫu, bridge không đọc).');
   console.log('   Bấm Ctrl+C để dừng.');
   console.log('==================================================');
 
