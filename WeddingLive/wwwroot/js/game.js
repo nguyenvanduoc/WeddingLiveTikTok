@@ -61,6 +61,7 @@
       this.makeTextures();
       if (!TRANSPARENT) this.drawVenue();
       this.drawCouple();
+      this.drawMC();
       this.drawGuests();
       this.drawHud();
       this.makeEffects();
@@ -143,6 +144,56 @@
       tag(CENTER_X - 70, '👰 ' + cfg.brideName);
       tag(CENTER_X + 70, '🤵 ' + cfg.groomName);
       this.add.text(CENTER_X, 205, '💕', { fontFamily: FONT, fontSize: '34px' }).setOrigin(0.5).setDepth(341);
+    }
+
+    // ---------------- MC đứng bên trái sân khấu + khung phụ đề ----------------
+    drawMC() {
+      const x = 372, y = 352;
+      this.mc = makePerson(this, x, y, 'mc');
+      this.mc.root.setScale(1.1).setDepth(y);
+      makeLabel(this, '🎤 MC', { fontSize: '13px', bg: 0xc9184a, bgAlpha: 0.92 }).setPosition(x, y + 14).setDepth(y + 1);
+      // Đứng yên: đung đưa nhẹ
+      this.tweens.add({ targets: this.mc.puppet, angle: { from: -2, to: 2 }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+
+      // Phụ đề: hiện đúng câu MC đang đọc (khung trắng góc trái, đuôi chỉ vào MC)
+      this.sub = this.add.container(20, 145).setDepth(905).setAlpha(0);
+      this.subBg = this.add.graphics();
+      this.subText = this.add.text(14, 10, '', {
+        fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#5c0f2a',
+        wordWrap: { width: 272, useAdvancedWrap: true }, lineSpacing: 2
+      });
+      this.sub.add([this.subBg, this.subText]);
+      this.mcTalk = [];
+      voice.onSpeech(text => this.mcSpeak(text), () => this.mcSilent());
+    }
+
+    mcSpeak(text) {
+      const w = 300;
+      this.subText.setText('🎤 ' + text);
+      const h = this.subText.height + 20;
+      const tipX = 372 - 20 - 16, tipY = 352 - 145 - 118;          // đầu MC, tính theo gốc khung phụ đề
+      const by = Phaser.Math.Clamp(tipY, 18, h - 18);
+      this.subBg.clear()
+        .fillStyle(0xffffff, 0.96).fillRoundedRect(0, 0, w, h, 14)
+        .fillTriangle(w - 2, by - 9, w - 2, by + 9, tipX, tipY)
+        .lineStyle(3, 0xc9184a, 1).strokeRoundedRect(0, 0, w, h, 14);
+      this.tweens.add({ targets: this.sub, alpha: 1, duration: 120 });
+
+      // Nhép miệng + nhún người khi nói
+      this.mcTalk.forEach(t => t.stop());
+      this.mc.mouth.setVisible(true);
+      this.mcTalk = [
+        this.tweens.add({ targets: this.mc.mouth, scaleY: { from: 0.3, to: 1.3 }, duration: 90, yoyo: true, repeat: -1 }),
+        this.tweens.add({ targets: this.mc.root, y: 352 - 3, duration: 180, yoyo: true, repeat: -1 })
+      ];
+    }
+
+    mcSilent() {
+      this.mcTalk.forEach(t => t.stop());
+      this.mcTalk = [];
+      this.mc.mouth.setVisible(false);
+      this.mc.root.y = 352;
+      this.tweens.add({ targets: this.sub, alpha: 0, duration: 250 });
     }
 
     // ---------------- Khách mời ở dưới ----------------
@@ -347,6 +398,7 @@
 
       const emoji = giftEmoji(gift.giftName);
       guest.gift.setText(emoji);
+      voice.announceGift(gift);                    // MC đọc: "Mời Lan Phương lên tặng 15 bông hồng!"
 
       // Hàng đợi dài => đi nhanh hơn
       const speed = 300 * (1 + Math.min(this.queue.length, 10) * 0.12);
@@ -490,6 +542,7 @@
     }
 
     onLeaderboard(list) {
+      voice.setTopGifter(list[0]?.nickname);
       const medals = ['🥇', '🥈', '🥉', '4.', '5.'];
       this.lbText.setText(list.length
         ? list.map((x, i) => `${medals[i]} ${x.nickname.slice(0, 16)}  💎${x.diamonds}`).join('\n')

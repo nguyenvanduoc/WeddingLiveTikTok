@@ -32,6 +32,7 @@ TikTok Live ──► tiktok-bridge (Node.js) ──HTTP POST──► WeddingLi
 |---|---|
 | `start.bat` | Tắt server cũ → chạy server .NET + TikTok bridge (2 cửa sổ) → mở trang điều khiển. Lần đầu tự `npm install` và mở `.env` để điền tên TikTok |
 | `start-server.bat` | Chỉ chạy server (test bằng trang admin, không cần live) |
+| `open-stage.bat` | Mở sân khấu trong cửa sổ Chrome/Edge riêng, tự phát giọng MC (dùng cho TikTok LIVE Studio) |
 
 Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
 
@@ -101,11 +102,17 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 
 ## 🎙️ MC ảo (giọng đọc)
 
-- Cứ **60 giây yên lặng** MC đọc 1 câu giới thiệu (lần lượt các câu trong `Voice:Announcements`).
-- Khách trao quà xong → MC **cảm ơn** người tặng ("Cảm ơn Lan Phương đã tặng 15 bông hồng…").
-  Quà lớn có câu riêng; nhiều quà dồn dập được gộp: "Cảm ơn Bảo, Mai, Hân và 2 bạn khác…".
-- Follow → "Cảm ơn … đã theo dõi kênh!".
-- Trang admin: gõ câu bất kỳ → **📢 Đọc trên sân khấu**, hoặc **🎧 Nghe thử ở đây**.
+Nhân vật **MC** (áo dài đỏ, cầm micro) đứng bên trái sân khấu: khi đọc thì nhép miệng, nhún người và hiện **phụ đề** đúng câu đang đọc.
+
+- Khách bắt đầu lên sân khấu → MC đọc **tên người tặng + quà gì**: "Mời Lan Phương lên tặng 15 bông hồng!" (mỗi quà 1 câu, `Voice:GiftAnnounce`).
+- Quà lớn → thêm lời cảm ơn riêng khi trao quà (`Voice:BigGiftThanks`).
+- Sân khấu lặng **3 giây** → MC nói câu dẫn tiếp (`Voice:Announcements`, `AnnounceIntervalSeconds`) ⇒ nói gần như liên tục.
+  Câu có `{top1}` (người tặng nhiều nhất) chỉ đọc khi đã có người tặng.
+- Follow → "Cảm ơn … đã theo dõi kênh!". Admin gõ câu → MC đọc ngay.
+- Tốc độ mặc định **x3** (`Voice:Speed`, 0.5 – 3.0).
+
+**Live bằng TikTok LIVE Studio:** bấm đúp `open-stage.bat` → mở sân khấu trong cửa sổ Chrome/Edge riêng **được tự phát âm thanh**
+(không cần bấm 🔊) → trong LIVE Studio thêm *Window capture* chọn cửa sổ đó và bật thu âm thanh hệ thống / desktop audio.
 
 Giọng đọc (`Voice:Provider`):
 
@@ -117,7 +124,7 @@ Giọng đọc (`Voice:Provider`):
 | `googlecloud` | Google Cloud Text-to-Speech – giọng `vi-VN-Neural2-A` (nữ) / `vi-VN-Neural2-D` (nam), `vi-VN-Wavenet-A..D`. Cần API key (console.cloud.google.com → bật *Cloud Text-to-Speech API* → Credentials → API key), điền `GoogleCloudKey` |
 | `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
 
-**Tốc độ đọc:** `Voice:Speed` (mặc định `1.5` = nhanh gấp 1,5 lần; `1.0` bình thường; tối đa `2.0`). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
+**Tốc độ đọc:** `Voice:Speed` (mặc định `3.0` = nhanh gấp 3; `1.0` bình thường; `1.5` vừa phải; tối đa `3.0`). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
 giọng Google miễn phí thì trình duyệt phát nhanh hơn mà vẫn giữ cao độ.
 Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng tạm giọng Google miễn phí, trang admin hiện lý do.
 

@@ -50,10 +50,19 @@ public class TtsService
     }
 
     /// <summary>
-    /// Giọng nào tự chỉnh được tốc độ khi tạo file (Azure, Google Cloud). Giọng Google Translate
-    /// không chỉnh được => trình duyệt tự phát nhanh hơn (playbackRate, giữ nguyên cao độ).
+    /// Phần tốc độ mà dịch vụ tự xử lý khi tạo giọng: Azure tối đa x2, Google Cloud tối đa x4,
+    /// Google Translate không chỉnh được (x1). Phần còn lại trình duyệt tăng tốc khi phát
+    /// (playbackRate, giữ nguyên cao độ). Ví dụ Speed 3 với Azure = Azure x2 * trình duyệt x1.5.
     /// </summary>
-    public bool ProviderHandlesSpeed => ResolveProvider() is "azure" or "googlecloud";
+    public static double ProviderSpeed(string provider, double speed) => provider switch
+    {
+        "azure" => Math.Min(speed, 2.0),
+        "googlecloud" => Math.Min(speed, 4.0),
+        _ => 1.0
+    };
+
+    /// <summary>Tốc độ trình duyệt cần tự tăng thêm khi phát.</summary>
+    public double ClientSpeed(double speed) => speed / ProviderSpeed(ResolveProvider(), speed);
 
     public async Task<byte[]?> SynthesizeAsync(string text, CancellationToken ct)
     {
@@ -62,7 +71,7 @@ public class TtsService
         if (provider == "browser") return null;
 
         var o = _options.CurrentValue;
-        var speed = o.ClampedSpeed;
+        var speed = ProviderSpeed(provider, o.ClampedSpeed);
         var key = provider switch
         {
             "azure" => $"azure|{o.AzureVoice}|{speed}|{text}",

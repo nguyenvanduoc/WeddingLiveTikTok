@@ -28,25 +28,27 @@ public class VoiceOptions
     /// <summary>vi-VN-Neural2-A (nữ), vi-VN-Neural2-D (nam), vi-VN-Wavenet-A..D...</summary>
     public string GoogleCloudVoice { get; set; } = "vi-VN-Neural2-A";
 
-    /// <summary>Tốc độ đọc: 1.0 = bình thường, 1.2 = nhanh hơn 20% (0.5 - 2.0). Áp dụng cho mọi giọng.</summary>
-    public double Speed { get; set; } = 1.5;
+    /// <summary>Tốc độ đọc: 1.0 = bình thường, 1.5 = nhanh 1,5 lần, 3.0 = nhanh gấp 3 (0.5 - 3.0). Áp dụng cho mọi giọng.</summary>
+    public double Speed { get; set; } = 3.0;
 
-    public double ClampedSpeed => Math.Clamp(Speed <= 0 ? 1 : Speed, 0.5, 2.0);
+    public double ClampedSpeed => Math.Clamp(Speed <= 0 ? 1 : Speed, 0.5, 3.0);
 
     /// <summary>Âm lượng 0.0 - 1.0.</summary>
     public double Volume { get; set; } = 1.0;
 
-    /// <summary>Lặng bao nhiêu giây thì MC đọc 1 câu giới thiệu (0 = tắt).</summary>
-    public int AnnounceIntervalSeconds { get; set; } = 60;
+    /// <summary>Lặng bao nhiêu giây thì MC tự nói 1 câu dẫn (0 = tắt). Nhỏ = MC nói liên tục.</summary>
+    public int AnnounceIntervalSeconds { get; set; } = 3;
 
     public bool ThankFollow { get; set; } = true;
 
-    // Để trống (null) trong appsettings => dùng câu mặc định bên dưới.
+    // Để trống (null) trong appsettings => dùng câu mặc định bên dưới. Câu dẫn có {top1} (người tặng
+    // nhiều nhất) chỉ được đọc khi đã có người tặng quà.
     // (Không gán sẵn giá trị cho List vì config binder sẽ cộng dồn thay vì thay thế.)
     public List<string>? Announcements { get; set; }
     public List<string>? GiftThanks { get; set; }
     public List<string>? BigGiftThanks { get; set; }
-    public List<string>? GroupThanks { get; set; }
+    /// <summary>Đọc khi khách bắt đầu lên sân khấu tặng quà: tên người tặng + quà gì.</summary>
+    public List<string>? GiftAnnounce { get; set; }
     public List<string>? FollowThanks { get; set; }
 
     /// <summary>Tên quà TikTok (tiếng Anh) -> cách đọc tiếng Việt.</summary>
@@ -57,12 +59,19 @@ public class VoiceOptions
     public static readonly string[] DefaultAnnouncements =
     {
         "Kính thưa quý vị, chào mừng quý vị đến với lễ thành hôn của cô dâu {bride} và chú rể {groom}.",
-        "Hôm nay là ngày trọng đại của {bride} và {groom}. Xin chân thành cảm ơn quý vị đã dành thời gian đến chung vui cùng hai bạn.",
-        "Quý vị hãy tặng một bông hồng để được mời lên sân khấu, gửi lời chúc phúc tới cô dâu chú rể nhé.",
-        "Tình yêu của {bride} và {groom} đã đơm hoa kết trái. Xin mời quý vị cùng gửi những lời chúc tốt đẹp nhất tới đôi uyên ương.",
-        "Xin mời quý vị cùng nâng ly, chúc cho cô dâu chú rể trăm năm hạnh phúc, đầu bạc răng long.",
-        "Mỗi món quà của quý vị là một lời chúc phúc quý giá dành cho {bride} và {groom}. Gia đình xin chân thành cảm ơn.",
-        "Đừng quên thả tim và theo dõi kênh để cùng chung vui trọn vẹn buổi lễ hôm nay nhé."
+        "Hôm nay là ngày trọng đại của {bride} và {groom}. Xin chân thành cảm ơn quý vị đã đến chung vui.",
+        "Tặng một bông hồng là được mời lên sân khấu chúc phúc cô dâu chú rể ngay nhé!",
+        "Tình yêu của {bride} và {groom} đã đơm hoa kết trái. Xin mời quý vị gửi lời chúc tốt đẹp nhất tới đôi uyên ương.",
+        "Xin mời quý vị cùng nâng ly, chúc cô dâu chú rể trăm năm hạnh phúc, đầu bạc răng long.",
+        "Mỗi món quà là một lời chúc phúc quý giá dành cho {bride} và {groom}. Gia đình xin chân thành cảm ơn.",
+        "Hiện tại người tặng quà nhiều nhất là {top1}. Xin cảm ơn {top1} rất nhiều!",
+        "Ai sẽ vượt qua {top1} để dẫn đầu bảng tặng quà hôm nay đây?",
+        "Năm mươi khách mời đang ngồi chờ quý vị đó. Tặng quà để mời một người lên chúc mừng cô dâu chú rể nhé!",
+        "Đừng quên thả tim và theo dõi kênh để cùng chung vui trọn vẹn buổi lễ hôm nay.",
+        "Cô dâu {bride} hôm nay thật xinh đẹp, chú rể {groom} thật bảnh bao. Quý vị thấy có đẹp đôi không nào?",
+        "Bình luận lời chúc của bạn, khách mời sẽ đọc to lời chúc đó ngay trên màn hình!",
+        "Quà càng lớn, pháo hoa càng rực rỡ. Cùng làm sáng bừng lễ cưới của {bride} và {groom} nhé!",
+        "Chúc cho {bride} và {groom} luôn yêu thương, nhường nhịn và sớm có tin vui!"
     };
 
     public static readonly string[] DefaultGiftThanks =
@@ -80,10 +89,12 @@ public class VoiceOptions
         "Wow! {count} {gift} từ {name}! {bride} và {groom} vô cùng cảm động. Chúc {name} luôn may mắn và hạnh phúc!"
     };
 
-    public static readonly string[] DefaultGroupThanks =
+    public static readonly string[] DefaultGiftAnnounce =
     {
-        "Cảm ơn {names} đã gửi quà chúc mừng cô dâu chú rể!",
-        "Xin cảm ơn {names}. Những món quà của các bạn làm buổi lễ thêm ấm áp!"
+        "Mời {name} lên tặng {count} {gift}!",
+        "{name} tặng {count} {gift} cho cô dâu chú rể!",
+        "Xin mời {name} mang {count} {gift} lên chúc mừng {bride} và {groom}!",
+        "Cảm ơn {name} đã tặng {count} {gift}!"
     };
 
     public static readonly string[] DefaultFollowThanks =
