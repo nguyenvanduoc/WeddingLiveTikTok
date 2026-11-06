@@ -14,9 +14,10 @@
 
   <main>
     <section class="preview">
-      <iframe src="/" title="Sân khấu"></iframe>
+      <iframe src="/?voice=0" title="Sân khấu (đã tắt tiếng để không phát trùng)"></iframe>
       <p class="hint">Link sân khấu cho OBS / TikTok LIVE Studio (Browser Source 1280×720):
-        <code id="stageUrl"></code><br>Nền trong suốt: thêm <code>?bg=0</code></p>
+        <code id="stageUrl"></code><br>Nền trong suốt: thêm <code>?bg=0</code>. Khung xem trước ở đây đã tắt tiếng (<code>?voice=0</code>).
+        <br>OBS: tick <b>Control audio via OBS</b> trên Browser Source để giọng MC lên live.</p>
     </section>
 
     <section class="panel">
@@ -56,6 +57,14 @@
         <button data-act="follow" class="alt">Follow</button>
         <button data-act="share" class="alt">Share</button>
       </div>
+
+      <h2>🎙️ MC ảo <small id="voiceInfo"></small></h2>
+      <textarea id="mcText" rows="3" placeholder="Gõ câu cho MC đọc…">Xin mời quý vị cùng hướng lên sân khấu, chào đón cô dâu chú rể!</textarea>
+      <div class="row">
+        <button data-act="speak">📢 Đọc trên sân khấu</button>
+        <button data-act="preview" class="alt">🎧 Nghe thử ở đây</button>
+      </div>
+      <div class="row" id="quickLines"></div>
 
       <h2>⚙️ Khác</h2>
       <div class="row">

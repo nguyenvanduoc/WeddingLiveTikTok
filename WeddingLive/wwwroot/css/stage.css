@@ -16,3 +16,20 @@ body.transparent {
   width: 100%;
   height: 100%;
 }
+
+/* Hiện khi trình duyệt chặn tự phát âm thanh */
+.voice-unlock {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #c9184a;
+  color: #fff;
+  font: 600 18px "Segoe UI", Roboto, Arial, sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+  cursor: pointer;
+}

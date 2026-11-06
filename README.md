@@ -7,6 +7,7 @@ Game đám cưới chạy trên web (ASP.NET Core 8 + Phaser 3 + SignalR), kết
 - Quà lớn (≥ 99💎) → pháo hoa, chớp sáng, cô dâu chú rể nhảy lên.
 - **Bình luận** → khách nói bong bóng chat. **Thả tim** → tim bay. **Follow/Share** → thông báo.
 - Bảng **Top tặng quà**, hàng đợi khi đông, combo (Rose x15) được gộp thành 1 lượt.
+- **MC ảo đọc tiếng Việt**: tự giới thiệu đám cưới khi sân khấu yên lặng, cảm ơn từng người tặng quà / follow, admin gõ câu cho MC đọc.
 
 ![Sân khấu](docs/stage.png)
 
@@ -77,6 +78,32 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 2. Muốn nền trong suốt để chồng lên camera: `http://localhost:5000/?bg=0`.
 3. Live dọc 9:16: đặt Browser Source 1280×720 rồi crop/scale theo ý, hoặc sửa `W, H` trong `wwwroot/js/game.js`.
 
+## 🎙️ MC ảo (giọng đọc)
+
+- Cứ **60 giây yên lặng** MC đọc 1 câu giới thiệu (lần lượt các câu trong `Voice:Announcements`).
+- Khách trao quà xong → MC **cảm ơn** người tặng ("Cảm ơn Lan Phương đã tặng 15 bông hồng…").
+  Quà lớn có câu riêng; nhiều quà dồn dập được gộp: "Cảm ơn Bảo, Mai, Hân và 2 bạn khác…".
+- Follow → "Cảm ơn … đã theo dõi kênh!".
+- Trang admin: gõ câu bất kỳ → **📢 Đọc trên sân khấu**, hoặc **🎧 Nghe thử ở đây**.
+
+Giọng đọc (`Voice:Provider`):
+
+| Giá trị | Mô tả |
+|---|---|
+| `auto` (mặc định) | Có `AzureKey` thì dùng Azure, không thì Google |
+| `google` | Google Translate TTS – miễn phí, không cần key (dịch vụ không chính thức) |
+| `azure` | Azure Speech – giọng AI tự nhiên `vi-VN-HoaiMyNeural` (nữ) / `vi-VN-NamMinhNeural` (nam). Tạo resource **Speech** trên portal.azure.com (gói F0 miễn phí 500.000 ký tự/tháng), điền `AzureKey` + `AzureRegion` |
+| `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
+
+**Để giọng MC lên live:**
+- OBS: Browser Source → tick **Control audio via OBS** (tiếng đi vào mixer của OBS).
+- TikTok LIVE Studio (Window capture Chrome): thêm nguồn âm thanh hệ thống / Desktop audio.
+- Chrome thường chặn tự phát âm thanh → trên sân khấu hiện nút **🔊 Bấm để bật giọng MC**, bấm 1 lần là được.
+- Khung xem trước trong admin đã tắt tiếng (`?voice=0`) để không phát trùng.
+
+Sửa câu nói trong `appsettings.json` → mục `Voice` (biến: `{bride}` `{groom}` `{name}` `{count}` `{gift}` `{names}`),
+cách đọc tên quà ở `Voice:GiftNames` (ví dụ `"Rose": "bông hồng"`).
+
 ## Cấu hình – `WeddingLive/appsettings.json`
 
 ```json
@@ -108,7 +135,10 @@ Tất cả `/api/events/*` yêu cầu header `X-Api-Key` (hoặc `?key=`) nếu 
 | POST | `/api/events/reset` | xóa bảng xếp hạng + tên khách |
 | GET | `/api/events/webhook/gift` | query `username, nickname, gift, count, coins` |
 | GET | `/api/config` | cấu hình cho sân khấu |
-| WS | `/hub/wedding` | SignalR: `GiftReceived`, `ChatReceived`, `LikeReceived`, `SocialReceived`, `Leaderboard`, `BridgeStatus`, `ResetStage` |
+| GET | `/api/voice/config` | cấu hình giọng đọc + câu nói |
+| GET | `/api/tts?text=...` | trả file MP3 đọc câu đó |
+| POST | `/api/events/speak` | `{ text }` – MC đọc ngay trên sân khấu |
+| WS | `/hub/wedding` | SignalR: `GiftReceived`, `ChatReceived`, `LikeReceived`, `SocialReceived`, `Leaderboard`, `BridgeStatus`, `ResetStage`, `Speak` |
 
 Test nhanh bằng curl:
 

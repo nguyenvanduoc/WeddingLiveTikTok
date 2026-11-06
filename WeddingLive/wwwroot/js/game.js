@@ -27,6 +27,10 @@
   const giftEmoji = (name) => (GIFT_EMOJI.find(([re]) => re.test(name)) || [, '🎁'])[1];
   const isBig = (g) => (g.diamondValue * g.count) >= cfg.bigGiftDiamonds;
 
+  // MC ảo (giọng đọc)
+  const voice = window.WeddingVoice.create(cfg);
+  await voice.load();
+
   // Bàn tiệc ở cuối thảm đỏ
   const TABLE_N = Phaser.Math.Clamp(cfg.tableGuests ?? 0, 0, 12);
   const HAS_TABLE = TABLE_N > 0;
@@ -52,6 +56,8 @@
       this.drawHud();
       this.makeEffects();
       this.connectSignalR();
+      // MC không đọc lời giới thiệu khi đang có khách lên tặng quà
+      voice.setBusyCheck(() => this.queue.length > 0 || this.guests.some(g => g.busy));
     }
 
     // ---------------- Texture dùng cho hiệu ứng hạt ----------------
@@ -385,6 +391,7 @@
           this.hearts.explode(big ? 50 : 18, tx, ty + 10);
           this.coupleHappy(big);
           this.banner(`${emoji} ${gift.nickname} tặng ${gift.count > 1 ? gift.count + ' ' : ''}${gift.giftName}`, big);
+          voice.thankGift(gift, big);
           if (big) this.celebrate();
           this.tweens.add({
             targets: [fly, countTxt].filter(Boolean), alpha: 0, y: '-=40', delay: 900, duration: 500,
@@ -446,6 +453,7 @@
     }
 
     onSocial(e) {
+      if (e.action === 'follow') voice.thankFollow(e);
       const icon = { follow: '⭐ vừa theo dõi', share: '🔁 vừa chia sẻ live', join: '👋 vừa vào phòng' }[e.action] || e.action;
       const t = makeLabel(this, `${e.nickname} ${icon}`, { fontSize: '15px', bg: 0x2b2d42, bgAlpha: 0.8 })
         .setDepth(980).setPosition(W + 200, 0);
@@ -488,6 +496,7 @@
       conn.on('SocialReceived', e => this.onSocial(e));
       conn.on('Leaderboard', l => this.onLeaderboard(l));
       conn.on('ResetStage', () => this.onReset());
+      conn.on('Speak', e => voice.speakNow(e.text));
       conn.on('BridgeStatus', () => { });            // trạng thái bridge chỉ hiện ở trang admin
 
       const start = async () => {

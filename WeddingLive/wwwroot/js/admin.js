@@ -48,8 +48,28 @@
     like: async () => { await post('like', { userId: 'x', nickname: rnd(NAMES), likeCount: 10 }); log('❤️ +10 tim'); },
     follow: async () => { await post('social', { userId: 'x', nickname: rnd(NAMES), action: 'follow' }); log('⭐ follow'); },
     share: async () => { await post('social', { userId: 'x', nickname: rnd(NAMES), action: 'share' }); log('🔁 share'); },
+    speak: async () => { const t = $('mcText').value.trim(); if (t && await post('speak', { text: t })) log('📢 MC: ' + t); },
+    preview: async () => {
+      const t = $('mcText').value.trim(); if (!t) return;
+      try { await new Audio('/api/tts?text=' + encodeURIComponent(t)).play(); }
+      catch (e) { log('❌ Không phát được: ' + e.message); }
+    },
     reset: async () => { if (confirm('Xóa bảng xếp hạng và tên khách?') && await post('reset')) log('♻️ Đã reset'); }
   };
+
+  // Câu mẫu lấy từ cấu hình giọng đọc: bấm để đưa vào ô MC
+  Promise.all([fetch('/api/config').then(r => r.json()), fetch('/api/voice/config').then(r => r.json())])
+    .then(([w, v]) => {
+      $('voiceInfo').textContent = v.enabled ? `(giọng: ${v.provider})` : '(đang tắt – Voice:Enabled = false)';
+      const fill = (t) => t.replaceAll('{bride}', w.brideName).replaceAll('{groom}', w.groomName);
+      (v.announcements || []).slice(0, 7).forEach((t, i) => {
+        const b = document.createElement('button');
+        b.textContent = `Câu ${i + 1}`;
+        b.title = fill(t);
+        b.onclick = () => { $('mcText').value = fill(t); };
+        $('quickLines').appendChild(b);
+      });
+    }).catch(() => { });
 
   document.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => actions[b.dataset.act]()));
 
