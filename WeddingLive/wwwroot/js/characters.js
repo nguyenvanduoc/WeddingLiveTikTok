@@ -64,6 +64,7 @@
     };
     c.setText(text);
     c.textObj = t;
+    c.setBg = (color, alpha) => { opts.bg = color; if (alpha !== undefined) opts.bgAlpha = alpha; c.setText(t.text); };   // đổi màu nền nhãn
     return c;
   }
 

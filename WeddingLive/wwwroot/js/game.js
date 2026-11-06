@@ -22,10 +22,18 @@
     [/perfume/i, '🌸'], [/galaxy/i, '🌌'], [/universe|planet/i, '🪐'], [/lion/i, '🦁'],
     [/rocket/i, '🚀'], [/car/i, '🏎️'], [/ring|nhẫn/i, '💍'], [/crown/i, '👑'], [/flower|bouquet/i, '💐'],
     [/sunglass/i, '🕶️'], [/coffee/i, '☕'], [/money|gun/i, '💸'], [/confetti/i, '🎊'],
-    [/swan/i, '🦢'], [/butterfly/i, '🦋'], [/star/i, '⭐'], [/gg/i, '🎮'], [/rainbow/i, '🌈'], [/kiss/i, '💋']
+    [/swan/i, '🦢'], [/corgi|dog/i, '🐶'], [/butterfly/i, '🦋'], [/star/i, '⭐'], [/gg/i, '🎮'], [/rainbow/i, '🌈'], [/kiss/i, '💋']
   ];
   const giftEmoji = (name) => (GIFT_EMOJI.find(([re]) => re.test(name)) || [, '🎁'])[1];
   const isBig = (g) => (g.diamondValue * g.count) >= cfg.bigGiftDiamonds;
+
+  // Khách mời trong tiệc (khi sân khấu vắng): tên VAI + quà truyền thống. Không dùng tên giống tài khoản TikTok
+  // để người xem không nhầm là có người thật vừa tặng quà.
+  const NPC_ROLES = ['Bác Tư', 'Cô Hoa', 'Chú Ba', 'Dì Năm', 'Ông Sáu', 'Bà Bảy', 'Cậu Út', 'Mợ Hai', 'Anh Hùng hàng xóm',
+    'Chị Mai họ hàng', 'Bạn thân cô dâu', 'Bạn thân chú rể', 'Đồng nghiệp cô dâu', 'Đồng nghiệp chú rể', 'Sếp chú rể',
+    'Cô giáo cũ', 'Hội bạn đại học', 'Em họ cô dâu', 'Anh trai chú rể', 'Chị gái cô dâu', 'Bé Bi', 'Bé Na', 'Thím Ba', 'Dượng Tư'];
+  const NPC_OFFERS = [['🧧', 'phong bì'], ['💐', 'bó hoa'], ['🎁', 'hộp quà'], ['🍾', 'chai rượu'], ['🎂', 'bánh cưới'],
+    ['🧸', 'gấu bông'], ['🥂', 'ly rượu'], ['🌹', 'hoa hồng'], ['💝', 'hộp quà trái tim'], ['🍰', 'bánh kem'], ['🖼️', 'khung ảnh cưới'], ['🏮', 'đèn lồng']];
 
   // MC ảo (giọng đọc)
   const voice = window.WeddingVoice.create(cfg);
@@ -407,8 +415,22 @@
       const idle = this.guests.filter(g => !g.busy && !g.bubble && !g.userId);
       if (!idle.length) return;
       const guest = Phaser.Utils.Array.GetRandom(idle);
-      this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji: Phaser.Utils.Array.GetRandom(['💐', '💐', '🥂', '🎁', '🌹']) });
-      if (Math.random() < 0.6) voice.idleLine();     // MC mời gọi người xem trên live
+      // Tên VAI trong tiệc (không giống tài khoản TikTok) + quà mỗi lần một khác, không lặp gần nhau
+      const name = this.pickFresh('npcNames', NPC_ROLES, 10);
+      const [emoji, offer] = this.pickFresh('npcOffers', NPC_OFFERS, 4);
+      this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji, npcName: name });
+      if (Math.random() < 0.5) voice.npcVisit(name, offer);   // "Bác Tư lên trao phong bì mừng cô dâu chú rể!"
+      else if (Math.random() < 0.5) voice.idleLine();         // hoặc mời gọi người xem trên live
+    }
+
+    /** Chọn ngẫu nhiên 1 phần tử chưa dùng trong `avoid` lượt gần nhất. */
+    pickFresh(key, list, avoid) {
+      const recent = (this[key] ||= []);
+      const options = list.filter(x => !recent.includes(x));
+      const pick = Phaser.Utils.Array.GetRandom(options.length ? options : list);
+      recent.push(pick);
+      if (recent.length > avoid) recent.shift();
+      return pick;
     }
 
     npcChat() {
@@ -581,6 +603,12 @@
     sendGuest(guest, slot, gift) {
       guest.busy = true; slot.busy = true;
       guest.npcTrip = !!gift.npc;
+      if (gift.npc && gift.npcName) {
+        guest.savedLabel = { text: guest.label.textObj.text, visible: guest.label.visible };
+        guest.label.setBg(0x7b2cbf, 0.9);            // nhãn tím = khách mời trong tiệc (khác nhãn đen của người tặng thật)
+        guest.label.setText(gift.npcName);
+        guest.label.setVisible(true);
+      }
       if (!gift.npc) {                               // quà thật: khách nhận tên người tặng
         guest.userId = gift.userId;
         guest.lastUsed = performance.now();
@@ -612,6 +640,12 @@
           this.walk(guest, pathBack, speed, () => {
             stopWalk(guest);
             setFacing(guest, guest.seatFacing);
+            if (guest.savedLabel) {                  // khách mời về chỗ: trả lại nhãn cũ
+              guest.label.setBg(0x000000, 0.55);
+              guest.label.setText(guest.savedLabel.text);
+              guest.label.setVisible(guest.savedLabel.visible);
+              guest.savedLabel = null;
+            }
             guest.busy = false;
             this.processQueue();
           });

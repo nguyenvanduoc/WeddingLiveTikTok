@@ -226,6 +226,11 @@
         if (waiting.length >= (cfg.maxPendingChats || 4)) queue.splice(queue.indexOf(waiting[0]), 1);
         enqueue(fill(pick(cfg.chatTemplates || ['{name} nói: {comment}']), { ...base(), name: cleanName(e.nickname), comment }), PRIORITY_CHAT, { chat: true });
       },
+      /** Khách mời trong tiệc lên chúc mừng (chỉ khi MC rảnh, ưu tiên thấp hơn mọi thứ từ TikTok). */
+      npcVisit(name, offer) {
+        if (playing || queue.length || !cfg.npcLines?.length) return;
+        enqueue(fill(pick(cfg.npcLines), { ...base(), name, offer }), 0.6);
+      },
       /** Sân khấu vắng: MC mời gọi người xem (chỉ khi MC đang rảnh). */
       idleLine() {
         if (playing || queue.length || !cfg.idleLines?.length) return;

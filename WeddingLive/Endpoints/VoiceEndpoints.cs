@@ -52,6 +52,7 @@ public static class VoiceEndpoints
                 HugLines = Or(o.HugLines, VoiceOptions.DefaultHugLines),
                 DanceLines = Or(o.DanceLines, VoiceOptions.DefaultDanceLines),
                 IdleLines = Or(o.IdleLines, VoiceOptions.DefaultIdleLines),
+                NpcLines = Or(o.NpcLines, VoiceOptions.DefaultNpcLines),
                 GiftNames = giftNames
             });
         });

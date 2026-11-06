@@ -106,7 +106,8 @@ Mới live ít người: sau `IdleAfterSeconds` (6s) không có quà / bình lu�
 khoảng mỗi `IdleEverySeconds` (4s): cầm 💐🥂🌹 lên chúc mừng cô dâu chú rể, nói chuyện bằng bong bóng ("Trăm năm hạnh phúc!"), tim bay;
 MC mời gọi người xem (`Voice:IdleLines`).
 
-- **Không giả quà / người xem**: khách mời giữ tên "Khách N", không banner "X tặng", không tính bảng xếp hạng / thanh tình yêu,
+- Mỗi lượt khách mời mang **tên vai trong tiệc** (Bác Tư, Cô Hoa, Bạn thân cô dâu, Đồng nghiệp chú rể…) với **nhãn tím** và **quà truyền thống** khác nhau (🧧 phong bì, 🍾 rượu, 🎂 bánh cưới, 🧸 gấu bông…), không lặp gần nhau; MC: "Bác Tư lên trao phong bì mừng cô dâu chú rể!" (`Voice:NpcLines`).
+- **Không giả quà / người xem**: tên vai không giống tài khoản TikTok, nhãn tím khác nhãn đen của người tặng thật, không banner "X tặng", không tính bảng xếp hạng / thanh tình yêu,
   không dùng khách đang mang tên người tặng thật.
 - **Ưu tiên TikTok**: có quà / bình luận thật là dừng ngay; khi còn quà chờ thì không chạy; luôn chừa ≥ 2 chỗ trên sân khấu.
 - Tắt: `"IdleActivity": false` (mục `Wedding`).
