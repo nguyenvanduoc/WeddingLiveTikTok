@@ -175,11 +175,14 @@ function startLive() {
   let retryMs = 5000;
   let reconnectTimer = null;
 
-  function scheduleReconnect(reason) {
+  // Thử lại có giãn cách: thường tối đa 20s; bị giới hạn / bị chặn thì đợi lâu hơn (waitMs) để không làm hết lượt
+  // ký Euler Stream và không bị TikTok chặn vì kết nối dồn dập. Thêm 0-3s ngẫu nhiên cho tự nhiên.
+  function scheduleReconnect(reason, waitMs) {
     if (reconnectTimer) return;
-    console.log(`🔁 Thử kết nối lại sau ${retryMs / 1000}s`);
-    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, retryMs);
-    retryMs = Math.min(retryMs * 2, 15000);   // tối đa 15s: vừa Go LIVE là bắt được nhanh
+    const delay = Math.max(retryMs, waitMs || 0) + Math.floor(Math.random() * 3000);
+    console.log(`🔁 Thử kết nối lại sau ${Math.round(delay / 1000)}s`);
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, delay);
+    retryMs = Math.min(retryMs * 2, 20000);
   }
 
   connection.on(ControlEvent.DISCONNECTED, ({ code, reason } = {}) => {
@@ -197,19 +200,21 @@ function startLive() {
     const name = err?.constructor?.name || '';
     const detail = [err?.message, err?.exception?.message, ...(err?.errors || []).map(e => e?.message)].filter(Boolean).join(' | ');
     if (name === 'UserOfflineError' || /isn't online|offline/i.test(detail))
-      return { msg: `@${USERNAME} chưa phát live`, tip: `Đã bấm Go LIVE chưa? Đúng tên @ chưa? Mở thử https://www.tiktok.com/@${USERNAME}/live` };
+      return { msg: `@${USERNAME} chưa phát live`, waitMs: 20000, tip: `Đã bấm Go LIVE chưa? Đúng tên @ chưa? Mở thử https://www.tiktok.com/@${USERNAME}/live` };
     if (/room ?id/i.test(detail))
-      return { msg: `Không tìm thấy phòng live của @${USERNAME}`, tip: `Sai tên @ hoặc chưa bấm Go LIVE. Mở thử https://www.tiktok.com/@${USERNAME} xem có đúng trang của bạn không` };
+      return { msg: `Không tìm thấy phòng live của @${USERNAME}`, waitMs: 20000, tip: `Sai tên @ hoặc chưa bấm Go LIVE. Mở thử https://www.tiktok.com/@${USERNAME} xem có đúng trang của bạn không` };
     if (name === 'InvalidUniqueIdError')
       return { msg: `Tên @ "${USERNAME}" không hợp lệ`, tip: 'TIKTOK_USERNAME phải là tên @ trong link hồ sơ, không phải tên hiển thị' };
     if (name === 'SignatureRateLimitError' || /rate.?limit|429/i.test(detail))
-      return { msg: 'Dịch vụ ký Euler Stream hết lượt miễn phí', tip: 'Đăng ký key miễn phí ở https://www.eulerstream.com rồi điền EULER_API_KEY trong .env' };
+      return { msg: 'Dịch vụ ký Euler Stream hết lượt miễn phí', tip: 'Đăng ký key miễn phí ở https://www.eulerstream.com rồi điền EULER_API_KEY trong .env (bridge tự đợi 2 phút rồi thử lại)', waitMs: 120000 };
     if (/business plan|pricing/i.test(detail))
       return { msg: 'Tính năng cần gói trả phí Euler Stream', tip: 'Cập nhật bridge mới nhất (git pull) — bản mới không dùng tính năng trả phí' };
     if (/^Sign|Signature/.test(name) || /sign|euler|401|403/i.test(detail))
       return { msg: 'Lỗi dịch vụ ký Euler Stream', tip: 'Điền / kiểm tra EULER_API_KEY trong .env (đăng ký miễn phí ở eulerstream.com)' };
     if (name === 'ConnectTimeoutError' || /timeout|ETIMEDOUT|ENOTFOUND|ECONNRESET/i.test(detail))
       return { msg: 'Mạng chậm / không vào được TikTok', tip: 'Kiểm tra mạng, tắt VPN/proxy rồi thử lại' };
+    if (/DEVICE_BLOCKED|blocked/i.test(detail))
+      return { msg: 'TikTok tạm chặn kết nối (thử kết nối lại quá nhiều)', tip: 'Bridge sẽ tự đợi 2 phút rồi thử lại. Điền EULER_API_KEY trong .env để ít bị chặn', waitMs: 120000 };
     return { msg: detail || String(err), tip: 'Chụp màn hình cửa sổ này gửi người hỗ trợ' };
   }
 
@@ -221,11 +226,11 @@ function startLive() {
       console.log('   Đang chờ bình luận / quà... (người vào xem và tim cũng được in ra để biết dữ liệu đang về)');
       status(true, 'Đang nhận sự kiện');
     } catch (err) {
-      const { msg, tip } = explain(err);
+      const { msg, tip, waitMs } = explain(err);
       console.error(`❌ Không kết nối được: ${msg}`);
       console.error(`   👉 ${tip}`);
       status(false, msg);
-      scheduleReconnect(msg);
+      scheduleReconnect(msg, waitMs);
     }
   }
 
