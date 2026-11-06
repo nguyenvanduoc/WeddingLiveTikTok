@@ -117,7 +117,7 @@ Giọng đọc (`Voice:Provider`):
 | `googlecloud` | Google Cloud Text-to-Speech – giọng `vi-VN-Neural2-A` (nữ) / `vi-VN-Neural2-D` (nam), `vi-VN-Wavenet-A..D`. Cần API key (console.cloud.google.com → bật *Cloud Text-to-Speech API* → Credentials → API key), điền `GoogleCloudKey` |
 | `browser` | Giọng có sẵn của Windows/trình duyệt (OBS không thu riêng được, phải thu Desktop Audio) |
 
-**Tốc độ đọc:** `Voice:Speed` (mặc định `1.2` = nhanh hơn 20%; `1.0` bình thường; `1.4` rất nhanh). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
+**Tốc độ đọc:** `Voice:Speed` (mặc định `1.5` = nhanh gấp 1,5 lần; `1.0` bình thường; tối đa `2.0`). Azure/Google Cloud chỉnh tốc độ ngay khi tạo giọng;
 giọng Google miễn phí thì trình duyệt phát nhanh hơn mà vẫn giữ cao độ.
 Giọng có key bị lỗi (sai key, hết hạn mức) → server tự dùng tạm giọng Google miễn phí, trang admin hiện lý do.
 
