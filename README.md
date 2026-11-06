@@ -26,6 +26,21 @@ TikTok Live ──► tiktok-bridge (Node.js) ──HTTP POST──► WeddingLi
 | `WeddingLive/wwwroot/admin.html` | Bảng điều khiển: giả lập quà, xem trạng thái bridge |
 | `tiktok-bridge/` | Script Node.js đọc TikTok Live bằng `tiktok-live-connector` |
 
+## ⚡ Chạy nhanh trên Windows
+
+| File (bấm đúp ở thư mục gốc) | Làm gì |
+|---|---|
+| `start.bat` | Tắt server cũ → chạy server .NET + TikTok bridge (2 cửa sổ) → mở trang điều khiển. Lần đầu tự `npm install` và mở `.env` để điền tên TikTok |
+| `start-server.bat` | Chỉ chạy server (test bằng trang admin, không cần live) |
+
+Hoặc gõ lệnh **ở thư mục gốc** `WeddingLiveTikTok`:
+
+| Lệnh | Tương đương |
+|---|---|
+| `npm run server` | `dotnet run --project WeddingLive` |
+| `npm run setup` | `npm install` trong `tiktok-bridge` (chạy 1 lần) |
+| `npm start` | chạy TikTok bridge |
+
 ## Chạy thử (không cần live)
 
 Yêu cầu: [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)

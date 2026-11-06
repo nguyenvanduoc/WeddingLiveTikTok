@@ -1,0 +1,11 @@
+{
+  "name": "wedding-live-tiktok",
+  "private": true,
+  "description": "Lệnh tắt chạy từ thư mục gốc: npm start (bridge), npm run server (.NET), npm run setup (cài bridge)",
+  "scripts": {
+    "start": "npm --prefix tiktok-bridge start",
+    "bridge": "npm --prefix tiktok-bridge start",
+    "setup": "npm --prefix tiktok-bridge install",
+    "server": "dotnet run --project WeddingLive"
+  }
+}
