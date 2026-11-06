@@ -181,6 +181,7 @@
     function cleanComment(s) {
       if (!s || /(https?:\/\/|www\.|\.com\b|\.vn\b)/i.test(s)) return null;
       let t = s.normalize('NFC')
+        .replace(/\[[\p{L}\p{N}_ ]{1,20}\]/gu, ' ')       // mã biểu tượng cảm xúc TikTok: [wow] [smile]...
         .replace(/[^\p{L}\p{N}\s.,!?'"-]/gu, ' ')     // bỏ emoji, ký hiệu
         .replace(/([!?.,])\1+/g, '$1')                  // "!!!!" -> "!"
         .replace(/(\p{L})\1{3,}/gu, '$1$1')             // "quáaaaaa" -> "quáa"

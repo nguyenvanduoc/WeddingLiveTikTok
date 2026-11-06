@@ -84,7 +84,7 @@ function startLive() {
   // ---------- Kết nối TikTok ----------
   const connection = new TikTokLiveConnection(USERNAME, {
     signApiKey: EULER_KEY,
-    enableExtendedGiftInfo: true
+    enableExtendedGiftInfo: false   // true cần gói trả phí Euler Stream ("Business plan"); tên quà + giá đã có sẵn trong sự kiện quà
   });
 
   // QUÀ: quà combo (giftType = 1, vd Rose) bắn nhiều event khi đang combo,
@@ -172,6 +172,8 @@ function startLive() {
       return { msg: `Tên @ "${USERNAME}" không hợp lệ`, tip: 'TIKTOK_USERNAME phải là tên @ trong link hồ sơ, không phải tên hiển thị' };
     if (name === 'SignatureRateLimitError' || /rate.?limit|429/i.test(detail))
       return { msg: 'Dịch vụ ký Euler Stream hết lượt miễn phí', tip: 'Đăng ký key miễn phí ở https://www.eulerstream.com rồi điền EULER_API_KEY trong .env' };
+    if (/business plan|pricing/i.test(detail))
+      return { msg: 'Tính năng cần gói trả phí Euler Stream', tip: 'Cập nhật bridge mới nhất (git pull) — bản mới không dùng tính năng trả phí' };
     if (/^Sign|Signature/.test(name) || /sign|euler|401|403/i.test(detail))
       return { msg: 'Lỗi dịch vụ ký Euler Stream', tip: 'Điền / kiểm tra EULER_API_KEY trong .env (đăng ký miễn phí ở eulerstream.com)' };
     if (name === 'ConnectTimeoutError' || /timeout|ETIMEDOUT|ENOTFOUND|ECONNRESET/i.test(detail))
