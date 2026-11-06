@@ -24,4 +24,5 @@ exit /b 1
 
 :run
 echo Dang mo san khau bang: %B%
-start "" "%B%" --app=%URL% --autoplay-policy=no-user-gesture-required --user-data-dir="%PROFILE%" --window-size=1296,759 --no-first-run --no-default-browser-check
+rem Cac co --disable-...: khong cho trinh duyet giam toc do ve khi cua so bi che (LIVE Studio dang o tren) => hinh khong bi dung.
+start "" "%B%" --app=%URL% --autoplay-policy=no-user-gesture-required --user-data-dir="%PROFILE%" --window-size=1296,759 --no-first-run --no-default-browser-check --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows
