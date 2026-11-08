@@ -56,7 +56,7 @@ public class WeddingOptions
     /// <summary>Khoảng cách trung bình (giây) giữa 2 hoạt động của khách mời.</summary>
     public int IdleEverySeconds { get; set; } = 20;
     /// <summary>Khoảng mỗi N giây có 1 khách ảo (nhãn tím) lên tặng quà. 0 = tắt. Có quà thật thì khách ảo nhường.</summary>
-    public int NpcGiftEverySeconds { get; set; } = 6;
+    public int NpcGiftEverySeconds { get; set; } = 20;
 
     /// <summary>Phát nhạc cưới khi vắng quà thật.</summary>
     public bool MusicEnabled { get; set; } = true;

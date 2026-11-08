@@ -441,15 +441,15 @@
     }
 
     /**
-     * Khoảng mỗi npcGiftEverySeconds (mặc định 6s, dao động ±20%) có 1 khách ảo lên tặng quà.
+     * Khoảng mỗi npcGiftEverySeconds (mặc định 20s, dao động ±10%) có 1 khách ảo lên tặng quà.
      * Có quà THẬT đang chờ / cô dâu chú rể đang ôm hôn, khiêu vũ => khách ảo nhường, không lên.
      */
     npcGiftTick() {
-      const every = (cfg.npcGiftEverySeconds ?? 6) * 1000;
+      const every = (cfg.npcGiftEverySeconds ?? 20) * 1000;
       if (!every || cfg.idleActivity === false) return;
       const now = performance.now();
       if (now < (this.npcNext || 0) || this.queue.length || this.coupleBusy) return;
-      if (this.npcVisit()) this.npcNext = now + every * (0.7 + Math.random() * 0.4) - 500;   // trung bình ~6 giây (vòng kiểm tra chạy 1 giây/lần)
+      if (this.npcVisit()) this.npcNext = now + every * (0.9 + Math.random() * 0.2) - 500;   // trung bình ~npcGiftEverySeconds (vòng kiểm tra chạy 1 giây/lần)
     }
 
     /** Một khách ảo (tên vai trong tiệc, nhãn tím) lên tặng quà. Trả về true nếu đã đi. */
@@ -467,9 +467,7 @@
         : this.pickFresh('npcOffers', NPC_OFFERS, 30);              // còn lại: quà ngẫu nhiên, không lặp trong 30 lượt
       this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji, npcName: name });
       this.lastSend = performance.now();
-      // MC thỉnh thoảng giới thiệu (không phải lượt nào cũng đọc, để dành tiếng cho bình luận/quà thật)
-      if (Math.random() < 0.3) voice.npcVisit(name, offer);   // "Bác Tư lên trao bó hoa mừng cô dâu chú rể!"
-      else if (Math.random() < 0.15) voice.idleLine();        // hoặc mời gọi người xem trên live
+      voice.npcVisit(name, offer);                    // lượt nào cũng đọc: "Bác Tư lên trao bó hoa mừng cô dâu chú rể!"
       return true;
     }
 

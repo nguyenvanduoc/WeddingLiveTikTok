@@ -160,7 +160,10 @@
       }
       queue.push(item);
       // Tin THẬT tới trong lúc MC đang nói câu tự động / câu DEMO => ngắt câu đó, đọc tin thật ngay
-      if (priority >= PRIORITY_REAL && playing && current && !current.real && current.priority < 4 && stopCurrent) {
+      // Khách ảo vừa đi lên tặng => ngắt câu MC tự nói (câu chúc/câu dẫn) để đọc đúng lúc
+      const cut = (priority >= PRIORITY_REAL && !current?.real && current?.priority < 4)
+        || (extra.interruptAuto && current?.priority < 1);
+      if (cut && playing && stopCurrent) {
         const stop = stopCurrent; stopCurrent = null; stop();
       }
       pump();
@@ -305,9 +308,10 @@
         return 'queued';
       },
       /** Khách mời trong tiệc lên chúc mừng (chỉ khi MC rảnh, ưu tiên thấp hơn mọi thứ từ TikTok). */
+      /** Khách ảo lên tặng quà: lượt nào cũng đọc (sau bình luận/quà thật, trước câu MC tự nói). */
       npcVisit(name, offer) {
-        if (playing || queue.length || !cfg.npcLines?.length) return;
-        enqueue(fill(pick(cfg.npcLines), { ...base(), name, offer }), 0.6);
+        if (!cfg.npcLines?.length) return;
+        enqueue(fill(pick(cfg.npcLines), { ...base(), name, offer }), 2.5, { interruptAuto: true });
       },
       /** MC giới thiệu bài nhạc cưới. */
       musicLine() {
