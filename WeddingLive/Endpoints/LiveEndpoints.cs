@@ -31,6 +31,7 @@ public static class LiveEndpoints
             o.CurrentValue.IdleActivity,
             IdleAfterSeconds = Math.Clamp(o.CurrentValue.IdleAfterSeconds, 2, 600),
             IdleEverySeconds = Math.Clamp(o.CurrentValue.IdleEverySeconds, 2, 120),
+            NpcGiftEverySeconds = Math.Clamp(o.CurrentValue.NpcGiftEverySeconds, 0, 600),
             o.CurrentValue.MusicEnabled,
             MusicEverySeconds = Math.Clamp(o.CurrentValue.MusicEverySeconds, 5, 3600),
             o.CurrentValue.MusicStopOnGift,

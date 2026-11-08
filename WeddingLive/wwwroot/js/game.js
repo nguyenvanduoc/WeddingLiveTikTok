@@ -44,6 +44,8 @@
       'Đội bóng của chú rể', 'Nhóm nhảy của cô dâu', 'Họ hàng bên nội', 'Họ hàng bên ngoại', 'Bạn cùng phòng ký túc', 'Thầy chủ nhiệm'];
     return [...rel.flatMap(r => ten.map(t => `${r} ${t}`)), ...groups];
   })();
+  const NPC_FLOWERS = [['🌹', 'bó hoa hồng'], ['💐', 'bó hoa cưới'], ['🌷', 'bó tulip'], ['🌻', 'bó hướng dương'],
+    ['🌸', 'cành hoa đào'], ['🌺', 'bó hoa dâm bụt'], ['🪷', 'bó hoa sen'], ['🌼', 'bó cúc họa mi']];
   const NPC_OFFERS = [['🧧', 'phong bì'], ['💐', 'bó hoa'], ['🎁', 'hộp quà'], ['🍾', 'chai rượu'], ['🎂', 'bánh cưới'],
     ['🧸', 'gấu bông'], ['🥂', 'ly rượu'], ['🌹', 'hoa hồng'], ['💝', 'hộp quà trái tim'], ['🍰', 'bánh kem'], ['🖼️', 'khung ảnh cưới'],
     ['🏮', 'đèn lồng'], ['💍', 'cặp nhẫn'], ['⌚', 'đồng hồ đôi'], ['🫖', 'bộ ấm trà'], ['🍵', 'hộp trà quý'], ['🍷', 'chai vang đỏ'],
@@ -422,7 +424,7 @@
     startIdleLoop() {
       this.lastReal = performance.now();
       this.idleNext = 0;
-      const tick = () => { this.idleTick(); this.after(1000, tick); };
+      const tick = () => { this.idleTick(); this.npcGiftTick(); this.after(1000, tick); };
       tick();
     }
 
@@ -434,26 +436,41 @@
       this.idleNext = now + (cfg.idleEverySeconds ?? 20) * 1000 * (0.7 + Math.random() * 0.6);
       // Ít quà ảo: 10% khách mời lên tặng, còn lại là nói chuyện, tim bay (MC đã tự xen câu chúc + kêu gọi)
       const r = Math.random();
-      if (r < 0.05) this.npcVisit();                // 5%: khách mời tự lên (ít quà ảo)
-      else if (r < 0.6) this.npcChat();
+      if (r < 0.6) this.npcChat();                   // khách ảo lên tặng quà: xem npcGiftTick()
       else if (r < 0.8) { this.likeHearts.explode(8, W - 60, H - 40); this.likeHearts.explode(6, 60, H - 40); }
     }
 
+    /**
+     * Khoảng mỗi npcGiftEverySeconds (mặc định 6s, dao động ±20%) có 1 khách ảo lên tặng quà.
+     * Có quà THẬT đang chờ / cô dâu chú rể đang ôm hôn, khiêu vũ => khách ảo nhường, không lên.
+     */
+    npcGiftTick() {
+      const every = (cfg.npcGiftEverySeconds ?? 6) * 1000;
+      if (!every || cfg.idleActivity === false) return;
+      const now = performance.now();
+      if (now < (this.npcNext || 0) || this.queue.length || this.coupleBusy) return;
+      if (this.npcVisit()) this.npcNext = now + every * (0.7 + Math.random() * 0.4) - 500;   // trung bình ~6 giây (vòng kiểm tra chạy 1 giây/lần)
+    }
+
+    /** Một khách ảo (tên vai trong tiệc, nhãn tím) lên tặng quà. Trả về true nếu đã đi. */
     npcVisit() {
       const free = this.slots.filter(s => !s.busy);
-      if (free.length < 2) return;                   // chừa chỗ cho người tặng thật
-      if (performance.now() - (this.lastSend || 0) < (cfg.giftPacingMs ?? 10000)) return;   // cách lượt trước >= 10 giây
+      if (free.length < 2) return false;             // luôn chừa 1 chỗ trống cho người tặng thật
       // Chỉ khách chưa mang tên người tặng thật (không để tên người thật "tặng thêm" giả)
       const idle = this.guests.filter(g => !g.busy && !g.bubble && !g.userId);
-      if (!idle.length) return;
+      if (!idle.length) return false;
       const guest = Phaser.Utils.Array.GetRandom(idle);
       // Tên VAI trong tiệc (không giống tài khoản TikTok) + quà mỗi lần một khác, không lặp gần nhau
       const name = this.pickFresh('npcNames', NPC_ROLES, 60);       // không lặp tên trong 60 lượt
-      const [emoji, offer] = this.pickFresh('npcOffers', NPC_OFFERS, 30);   // không lặp quà trong 30 lượt
+      const [emoji, offer] = Math.random() < 0.4
+        ? this.pickFresh('npcFlowers', NPC_FLOWERS, 3)              // 40%: tặng hoa
+        : this.pickFresh('npcOffers', NPC_OFFERS, 30);              // còn lại: quà ngẫu nhiên, không lặp trong 30 lượt
       this.sendGuest(guest, Phaser.Utils.Array.GetRandom(free), { npc: true, emoji, npcName: name });
       this.lastSend = performance.now();
-      if (Math.random() < 0.5) voice.npcVisit(name, offer);   // "Bác Tư lên trao phong bì mừng cô dâu chú rể!"
-      else if (Math.random() < 0.5) voice.idleLine();         // hoặc mời gọi người xem trên live
+      // MC thỉnh thoảng giới thiệu (không phải lượt nào cũng đọc, để dành tiếng cho bình luận/quà thật)
+      if (Math.random() < 0.3) voice.npcVisit(name, offer);   // "Bác Tư lên trao bó hoa mừng cô dâu chú rể!"
+      else if (Math.random() < 0.15) voice.idleLine();        // hoặc mời gọi người xem trên live
+      return true;
     }
 
     /** Chọn ngẫu nhiên 1 phần tử chưa dùng trong `avoid` lượt gần nhất. */
@@ -761,7 +778,10 @@
         // Giãn nhịp: 2 khách đứng dậy cách nhau ít nhất giftPacingMs (không bật dậy cùng lúc khi bị spam)
         // Mọi lượt khách đi lên (quà thật, DEMO, khách mời) cách nhau giftPacingMs (mặc định 10 giây).
         // MC vẫn ĐỌC quà thật ngay lúc quà tới – chỉ phần khách đi lên là giãn ra.
-        const wait = (this.lastSend || 0) + (cfg.giftPacingMs ?? 10000) - performance.now();
+        const gap = cfg.giftPacingMs ?? 10000;
+        const wait = this.queue[0].demo
+          ? (this.lastSend || 0) + gap - performance.now()
+          : Math.max((this.lastRealSend || -1e9) + gap, (this.lastSend || 0) + 1500) - performance.now();   // quà THẬT: khách ảo không làm chậm
         if (wait > 0) {
           if (!this.paceTimer) this.paceTimer = this.after(wait, () => { this.paceTimer = null; this.processQueue(); });
           break;
@@ -769,8 +789,10 @@
         const slot = this.slots.find(s => !s.busy);
         const guest = this.pickGuest(this.queue[0].userId);
         if (!slot || !guest) break;
-        this.sendGuest(guest, slot, this.queue.shift());
+        const g = this.queue.shift();
+        this.sendGuest(guest, slot, g);
         this.lastSend = performance.now();
+        if (!g.demo) this.lastRealSend = this.lastSend;
       }
       this.queueText.setText(this.queue.length ? `⏳ Đang chờ lên sân khấu: ${this.queue.length}` : '');
     }
@@ -1077,7 +1099,7 @@
       conn.on('StageConfigChanged', async () => {        // đổi nhịp quà ở admin => áp dụng ngay (bố cục giữ nguyên)
         try {
           const c = await (await fetch('/api/config')).json();
-          ['giftPacingMs', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
+          ['giftPacingMs', 'npcGiftEverySeconds', 'walkSpeed', 'idleActivity', 'idleAfterSeconds', 'idleEverySeconds', 'bigGiftDiamonds',
            'musicEnabled', 'musicEverySeconds', 'musicVolume', 'musicDuck', 'musicMaxSeconds', 'musicStopOnGift', 'danceMusicSeconds'].forEach(k => { if (k in c) cfg[k] = c[k]; });
           music.duck(false);                             // áp âm lượng mới ngay
           music.setOff(!MUSIC_ON());
