@@ -19,6 +19,8 @@ public class WeddingOptions
 
     /// <summary>Số bàn tròn (0 - 5). 0 = không có bàn.</summary>
     public int Tables { get; set; } = 5;
+    /// <summary>"portrait" = màn hình DỌC 9:16 (720x1280, mặc định – hợp điện thoại); "landscape" = NGANG 16:9 (1280x720).</summary>
+    public string Layout { get; set; } = "portrait";
 
     /// <summary>Số khách ngồi mỗi bàn (4 - 12).</summary>
     public int GuestsPerTable { get; set; } = 10;

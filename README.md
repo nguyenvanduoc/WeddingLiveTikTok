@@ -97,9 +97,9 @@ http://localhost:5000/api/events/webhook/gift?key=API_KEY&username={username}&ni
 
 ## Đưa lên live (OBS / TikTok LIVE Studio)
 
-1. Thêm nguồn **Browser Source**, URL `http://localhost:5000`, kích thước **1280 × 720**.
+1. Thêm nguồn **Browser Source**, URL `http://localhost:5000`, kích thước **720 × 1280** (mặc định màn hình DỌC 9:16 cho điện thoại). Bản ngang: URL `http://localhost:5000/?layout=landscape`, kích thước 1280 × 720.
 2. Muốn nền trong suốt để chồng lên camera: `http://localhost:5000/?bg=0`.
-3. Live dọc 9:16: đặt Browser Source 1280×720 rồi crop/scale theo ý, hoặc sửa `W, H` trong `wwwroot/js/game.js`.
+3. Đổi mặc định ngang/dọc: `"Layout": "portrait"` hoặc `"landscape"` trong `WeddingLive/appsettings.json` (mục Wedding). `open-stage.bat` mở cửa sổ dọc; `open-stage.bat ngang` mở cửa sổ ngang.
 
 ## 🎉 Sân khấu tự sinh động khi vắng (ưu tiên dữ liệu TikTok)
 

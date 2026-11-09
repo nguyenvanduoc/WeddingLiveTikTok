@@ -4,8 +4,6 @@
 //  1 khách rảnh nhận tên người tặng -> cầm quà đi lên -> tặng -> quay về.
 // =====================================================================
 (async function () {
-  const W = 1280, H = 720;
-  const CENTER_X = W / 2;
   const params = new URLSearchParams(location.search);
   const TRANSPARENT = params.get('bg') === '0';     // ?bg=0 => nền trong suốt cho OBS
   const { FONT, makePerson, makeLabel, makeChair, baked, startWalk, stopWalk, setFacing } = window.Chars;
@@ -14,6 +12,14 @@
   // Cấu hình từ server (tên cô dâu chú rể, số khách...)
   let cfg = { brideName: 'Cô Dâu', groomName: 'Chú Rể', title: 'Đám Cưới Online', guestCount: 6, tables: 5, guestsPerTable: 10, bigGiftDiamonds: 99, giftPacingMs: 10000, walkSpeed: 200 };
   try { cfg = { ...cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* dùng mặc định */ }
+
+  // Hướng màn hình: mặc định DỌC 9:16 (720x1280) cho người xem TikTok trên điện thoại.
+  // ?layout=landscape (hoặc Wedding:Layout = "landscape") => bản NGANG 16:9 (1280x720) như cũ.
+  const PORTRAIT = (params.get('layout') || cfg.layout || 'portrait').toLowerCase() !== 'landscape';
+  const W = PORTRAIT ? 720 : 1280, H = PORTRAIT ? 1280 : 720;
+  const CENTER_X = W / 2;
+  const OY = PORTRAIT ? 420 : 0;   // bản dọc: dời cả khu sân khấu xuống dưới phần tiêu đề / bảng xếp hạng
+  document.body.classList.add(PORTRAIT ? 'portrait' : 'landscape');
 
   // Tên quà -> emoji hiển thị trên tay khách
   const GIFT_EMOJI = [
@@ -68,7 +74,13 @@
   const MUSIC_ON = () => cfg.musicEnabled !== false && !voice.muted;
 
   // Bàn tiệc tròn. Vị trí xếp theo thứ tự ưu tiên; s = tỉ lệ thu nhỏ (bàn xa sân khấu hơn thì to hơn).
-  const TABLE_SPOTS = [
+  const TABLE_SPOTS = PORTRAIT ? [
+    { x: CENTER_X, y: 1234, s: 0.72 },  // bản dọc: bàn giữa dưới cùng (cuối thảm đỏ)
+    { x: 182, y: 962, s: 0.6 },         // hàng 1 trái
+    { x: 538, y: 962, s: 0.6 },         // hàng 1 phải
+    { x: 178, y: 1092, s: 0.66 },       // hàng 2 trái
+    { x: 542, y: 1092, s: 0.66 }        // hàng 2 phải
+  ] : [
     { x: CENTER_X, y: 668, s: 0.74 },   // giữa hàng trước (cuối thảm đỏ)
     { x: 330, y: 530, s: 0.62 },        // hàng sau bên trái
     { x: 950, y: 530, s: 0.62 },        // hàng sau bên phải
@@ -79,7 +91,7 @@
   const PER_TABLE = Phaser.Math.Clamp(cfg.guestsPerTable ?? 10, 4, 12);
   const HAS_TABLE = TABLES > 0;
   const TABLE_RX = 165, TABLE_RY = 42;  // bán kính mặt bàn ở tỉ lệ 1
-  const LANE_Y = 465;      // "lối đi ngang" phía trước sân khấu
+  const LANE_Y = 465 + OY; // "lối đi ngang" phía trước sân khấu
   const WALK_SCALE = 0.9;  // cỡ nhân vật khi lên sân khấu
 
   class WeddingScene extends Phaser.Scene {
@@ -93,9 +105,9 @@
       this.meterSeq = -1;
       this.pendingMeter = null;
       this.slots = [                   // vị trí đứng tặng quà: cạnh cô dâu, cạnh chú rể, chính giữa phía trước
-        { x: CENTER_X - 170, y: 365, busy: false },
-        { x: CENTER_X + 170, y: 365, busy: false },
-        { x: CENTER_X, y: 475, busy: false }
+        { x: CENTER_X - 170, y: 365 + OY, busy: false },
+        { x: CENTER_X + 170, y: 365 + OY, busy: false },
+        { x: CENTER_X, y: 475 + OY, busy: false }
       ];
 
       this.makeTextures();
@@ -129,28 +141,30 @@
       // Vẽ khung cảnh tĩnh 1 lần vào RenderTexture (như chụp thành ảnh) => mỗi khung hình
       // không phải tính lại hàng trăm hình tròn/tam giác, nhẹ máy hơn nhiều.
       const g = this.make.graphics({ add: false });
-      g.fillGradientStyle(0x3b1f5c, 0x3b1f5c, 0xc06c9a, 0xc06c9a, 1).fillRect(0, 0, W, 330);   // trời
-      g.fillGradientStyle(0xf9d9e6, 0xf9d9e6, 0xfdeef4, 0xfdeef4, 1).fillRect(0, 330, W, H - 330); // sàn
+      g.fillGradientStyle(0x3b1f5c, 0x3b1f5c, 0xc06c9a, 0xc06c9a, 1).fillRect(0, 0, W, 330 + OY);   // trời
+      g.fillGradientStyle(0xf9d9e6, 0xf9d9e6, 0xfdeef4, 0xfdeef4, 1).fillRect(0, 330 + OY, W, H - 330 - OY); // sàn
 
       // Sân khấu
-      g.fillStyle(0xe7a5c0, 1).fillRoundedRect(330, 285, 620, 100, 24);
-      g.fillStyle(0xd88aab, 1).fillRect(350, 368, 580, 16);
-      g.fillStyle(0xf3c2d6, 1).fillRect(560, 384, 160, 10).fillRect(545, 394, 190, 10);
+      g.fillStyle(0xe7a5c0, 1).fillRoundedRect(CENTER_X - 310, 285 + OY, 620, 100, 24);
+      g.fillStyle(0xd88aab, 1).fillRect(CENTER_X - 290, 368 + OY, 580, 16);
+      g.fillStyle(0xf3c2d6, 1).fillRect(CENTER_X - 80, 384 + OY, 160, 10).fillRect(CENTER_X - 95, 394 + OY, 190, 10);
 
       // Thảm đỏ
-      const carpetEnd = HAS_TABLE ? 640 : H, spread = (carpetEnd - 404) * 70 / (H - 404);
-      g.fillStyle(0xc9184a, 1).fillPoints([{ x: 590, y: 404 }, { x: 690, y: 404 },
-        { x: 690 + spread, y: carpetEnd }, { x: 590 - spread, y: carpetEnd }], true);
-      g.fillStyle(0xffd166, 0.7).fillRect(588, 404, 4, 4);
+      const carpetTop = 404 + OY;
+      const carpetEnd = HAS_TABLE ? (PORTRAIT ? H - 60 : 640) : H, spread = (carpetEnd - carpetTop) * 70 / (H - carpetTop);
+      g.fillStyle(0xc9184a, 1).fillPoints([{ x: CENTER_X - 50, y: carpetTop }, { x: CENTER_X + 50, y: carpetTop },
+        { x: CENTER_X + 50 + spread, y: carpetEnd }, { x: CENTER_X - 50 - spread, y: carpetEnd }], true);
+      g.fillStyle(0xffd166, 0.7).fillRect(CENTER_X - 52, carpetTop, 4, 4);
 
       // Cổng hoa
+      const AY = 330 + OY;
       g.lineStyle(16, 0xffffff, 1);
-      g.beginPath(); g.arc(CENTER_X, 330, 215, Math.PI, 2 * Math.PI); g.strokePath();
-      g.fillStyle(0xffffff, 1).fillRect(CENTER_X - 223, 330, 16, 50).fillRect(CENTER_X + 207, 330, 16, 50);
+      g.beginPath(); g.arc(CENTER_X, AY, 215, Math.PI, 2 * Math.PI); g.strokePath();
+      g.fillStyle(0xffffff, 1).fillRect(CENTER_X - 223, AY, 16, 50).fillRect(CENTER_X + 207, AY, 16, 50);
       const colors = [0xff4d6d, 0xffb3c6, 0xffffff, 0xff8fab, 0xc9184a];
       for (let i = 0; i <= 24; i++) {
         const a = Math.PI + (i / 24) * Math.PI;
-        const x = CENTER_X + Math.cos(a) * 215, y = 330 + Math.sin(a) * 215;
+        const x = CENTER_X + Math.cos(a) * 215, y = AY + Math.sin(a) * 215;
         g.fillStyle(0x52b788, 1).fillEllipse(x + 8, y + 4, 14, 8);
         g.fillStyle(colors[i % colors.length], 1).fillCircle(x, y, 11);
         g.fillStyle(0xffe5ec, 1).fillCircle(x, y, 4);
@@ -169,29 +183,30 @@
 
       // Tim bay nhẹ trên nền trời
       this.add.particles(0, 0, 'heart', {
-        x: { min: 0, max: W }, y: 340, lifespan: 7000, speedY: { min: -25, max: -50 }, speedX: { min: -10, max: 10 },
+        x: { min: 0, max: W }, y: 340 + OY, lifespan: 7000, speedY: { min: -25, max: -50 }, speedX: { min: -10, max: 10 },
         scale: { start: 0.6, end: 0.2 }, alpha: { start: 0.35, end: 0 }, tint: [0xffafcc, 0xffffff, 0xff8fab], frequency: 700
       }).setDepth(1);
     }
 
     // ---------------- Cô dâu chú rể ----------------
     drawCouple() {
-      this.bride = makePerson(this, CENTER_X - 60, 340, 'bride');
-      this.groom = makePerson(this, CENTER_X + 60, 340, 'groom');
-      [this.bride, this.groom].forEach(p => p.root.setDepth(340));
+      this.bride = makePerson(this, CENTER_X - 60, 340 + OY, 'bride');
+      this.groom = makePerson(this, CENTER_X + 60, 340 + OY, 'groom');
+      [this.bride, this.groom].forEach(p => p.root.setDepth(340 + OY));
       // nhún nhẹ liên tục cho sống động
       this.tweens.add({ targets: [this.bride.puppet, this.groom.puppet], y: -3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 
       const tag = (x, text) => makeLabel(this, text, { fontSize: '17px', bg: 0xffffff, bgAlpha: 0.9, color: '#c9184a', stroke: 0xff8fab })
-        .setPosition(x, 360).setDepth(345);
+        .setPosition(x, 360 + OY).setDepth(345 + OY);
       tag(CENTER_X - 70, '👰 ' + cfg.brideName);
       tag(CENTER_X + 70, '🤵 ' + cfg.groomName);
-      this.add.text(CENTER_X, 205, '💕', { fontFamily: FONT, fontSize: '34px' }).setOrigin(0.5).setDepth(341);
+      this.add.text(CENTER_X, 205 + OY, '💕', { fontFamily: FONT, fontSize: '34px' }).setOrigin(0.5).setDepth(341 + OY);
     }
 
     // ---------------- MC đứng bên trái sân khấu + khung phụ đề ----------------
     drawMC() {
-      const x = 372, y = 352;
+      const x = CENTER_X - 268, y = 352 + OY;
+      this.mcX = x; this.mcY = y;
       this.mc = makePerson(this, x, y, 'mc');
       this.mc.root.setScale(1.1).setDepth(y);
       makeLabel(this, '🎤 MC', { fontSize: '13px', bg: 0xc9184a, bgAlpha: 0.92 }).setPosition(x, y + 14).setDepth(y + 1);
@@ -199,11 +214,13 @@
       this.tweens.add({ targets: this.mc.puppet, angle: { from: -2, to: 2 }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 
       // Phụ đề: hiện đúng câu MC đang đọc (khung trắng góc trái, đuôi chỉ vào MC)
-      this.sub = this.add.container(20, 145).setDepth(905).setAlpha(0);
+      // Bản ngang: khung bên trái MC, đuôi chỉ sang phải. Bản dọc: khung phía trên, đuôi chỉ xuống đầu MC.
+      this.subW = PORTRAIT ? 420 : 300;
+      this.sub = this.add.container(20, PORTRAIT ? 408 : 145).setDepth(905).setAlpha(0);
       this.subBg = this.add.graphics();
       this.subText = this.add.text(14, 10, '', {
-        fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#5c0f2a',
-        wordWrap: { width: 272, useAdvancedWrap: true }, lineSpacing: 2
+        fontFamily: FONT, fontSize: PORTRAIT ? '19px' : '16px', fontStyle: 'bold', color: '#5c0f2a',
+        wordWrap: { width: this.subW - 28, useAdvancedWrap: true }, lineSpacing: 2
       });
       this.sub.add([this.subBg, this.subText]);
       this.mcTalk = [];
@@ -212,15 +229,19 @@
 
     mcSpeak(text) {
       music.duck(true);                                // MC nói: nhạc nhỏ lại
-      const w = 300;
+      const w = this.subW;
       this.subText.setText((voice.silent ? '🔇 (khung này tắt tiếng) ' : '🎤 ') + text);
       const h = this.subText.height + 20;
-      const tipX = 372 - 20 - 16, tipY = 352 - 145 - 118;          // đầu MC, tính theo gốc khung phụ đề
-      const by = Phaser.Math.Clamp(tipY, 18, h - 18);
-      this.subBg.clear()
-        .fillStyle(0xffffff, 0.96).fillRoundedRect(0, 0, w, h, 14)
-        .fillTriangle(w - 2, by - 9, w - 2, by + 9, tipX, tipY)
-        .lineStyle(3, 0xc9184a, 1).strokeRoundedRect(0, 0, w, h, 14);
+      this.subBg.clear().fillStyle(0xffffff, 0.96).fillRoundedRect(0, 0, w, h, 14);
+      if (PORTRAIT) {                                   // đuôi chỉ xuống đầu MC
+        const tipX = this.mcX - this.sub.x, tipY = this.mcY - 125 - this.sub.y;
+        if (tipY > h + 6) this.subBg.fillTriangle(tipX - 12, h - 2, tipX + 12, h - 2, tipX, tipY);
+      } else {                                          // đuôi chỉ sang phải vào đầu MC
+        const tipX = this.mcX - this.sub.x - 16, tipY = this.mcY - this.sub.y - 118;
+        const by = Phaser.Math.Clamp(tipY, 18, h - 18);
+        this.subBg.fillTriangle(w - 2, by - 9, w - 2, by + 9, tipX, tipY);
+      }
+      this.subBg.lineStyle(3, 0xc9184a, 1).strokeRoundedRect(0, 0, w, h, 14);
       this.tweens.add({ targets: this.sub, alpha: 1, duration: 120 });
 
       // Nhép miệng + nhún người khi nói
@@ -228,7 +249,7 @@
       this.mc.mouth.setVisible(true);
       this.mcTalk = [
         this.tweens.add({ targets: this.mc.mouth, scaleY: { from: 0.3, to: 1.3 }, duration: 90, yoyo: true, repeat: -1 }),
-        this.tweens.add({ targets: this.mc.root, y: 352 - 3, duration: 180, yoyo: true, repeat: -1 })
+        this.tweens.add({ targets: this.mc.root, y: this.mcY - 3, duration: 180, yoyo: true, repeat: -1 })
       ];
     }
 
@@ -237,7 +258,7 @@
       this.mcTalk.forEach(t => t.stop());
       this.mcTalk = [];
       this.mc.mouth.setVisible(false);
-      this.mc.root.y = 352;
+      this.mc.root.y = this.mcY;
       this.tweens.add({ targets: this.sub, alpha: 0, duration: 250 });
     }
 
@@ -268,8 +289,8 @@
       if (!HAS_TABLE) {
         // --- Không có bàn: khách đứng 2 bên lối đi như bản đầu ---
         const n = Phaser.Math.Clamp(cfg.guestCount, 4, 24);
-        const rows = Math.ceil(n / 6), top = 520, bottom = 690;
-        const xs = [140, 290, 440, 840, 990, 1140];
+        const rows = Math.ceil(n / 6), top = PORTRAIT ? 930 : 520, bottom = PORTRAIT ? 1240 : 690;
+        const xs = [140, 290, 440, 840, 990, 1140].map(x => Math.round(x * W / 1280));
         for (let i = 0; i < n; i++) {
           const row = Math.floor(i / 6);
           const y = rows === 1 ? (top + bottom) / 2 : top + (bottom - top) * row / (rows - 1);
@@ -279,8 +300,8 @@
         return;
       }
 
-      // --- Có bàn: khách đứng 2 bên sân khấu (0 - 12 người) ---
-      const n = Phaser.Math.Clamp(cfg.guestCount, 0, 12);
+      // --- Có bàn: khách đứng 2 bên sân khấu (0 - 12 người). Bản dọc: không đủ chỗ 2 bên => bỏ ---
+      const n = PORTRAIT ? 0 : Phaser.Math.Clamp(cfg.guestCount, 0, 12);
       const cols = [55, 135, 215, 1065, 1145, 1225];
       for (let i = 0; i < n; i++) {
         const x = cols[i % 6], y = i < 6 ? 445 : 492;
@@ -344,13 +365,15 @@
 
     // ---------------- Chữ, bảng xếp hạng, thông báo ----------------
     drawHud() {
-      this.add.text(CENTER_X, 30, `${cfg.brideName} 💍 ${cfg.groomName}`, {
+      // Bản dọc: chừa ~100px trên cùng (TikTok che bằng ảnh đại diện / số người xem)
+      this.add.text(CENTER_X, PORTRAIT ? 104 : 30, `${cfg.brideName} 💍 ${cfg.groomName}`, {
         fontFamily: FONT, fontSize: '34px', fontStyle: 'bold', color: '#ffffff', stroke: '#c9184a', strokeThickness: 6
       }).setOrigin(0.5, 0).setDepth(900);
       this.drawLoveMeter();
 
       // Bảng hướng dẫn (trái)
-      const info = this.add.container(20, 20).setDepth(900);
+      const HUD_Y = PORTRAIT ? 228 : 20;
+      const info = this.add.container(20, HUD_Y).setDepth(900);
       const ib = this.add.graphics().fillStyle(0x000000, 0.45).fillRoundedRect(0, 0, 300, 110, 14);
       info.add([ib,
         this.add.text(14, 10, cfg.title, { fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#ffd6e5' }),
@@ -360,7 +383,7 @@
       info.add(this.queueText);
 
       // Bảng xếp hạng (phải)
-      const lb = this.add.container(W - 300, 20).setDepth(900);
+      const lb = this.add.container(W - 300, HUD_Y).setDepth(900);
       lb.add(this.add.graphics().fillStyle(0x000000, 0.45).fillRoundedRect(0, 0, 280, 170, 14));
       lb.add(this.add.text(14, 10, '🏆 Top tặng quà', { fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: '#ffd166' }));
       this.lbText = this.add.text(14, 42, 'Chưa có ai…', { fontFamily: FONT, fontSize: '16px', color: '#ffffff', lineSpacing: 6 });
@@ -373,7 +396,7 @@
     //  THANH TÌNH YÊU: đủ HugAt điểm => ôm hôn, đủ DanceAt => khiêu vũ
     // =================================================================
     drawLoveMeter() {
-      const w = 380, h = 16, y = 90, x0 = CENTER_X - w / 2;
+      const w = 380, h = 16, y = PORTRAIT ? 172 : 90, x0 = CENTER_X - w / 2;
       this.meter = { w, h, y, x0, shown: 0, data: null };
       const c = this.add.container(0, 0).setDepth(900);
       const bg = this.add.graphics().fillStyle(0x000000, 0.45).fillRoundedRect(x0 - 4, y - h / 2 - 4, w + 8, h + 8, (h + 8) / 2);
@@ -519,7 +542,7 @@
         this.musicNotes = true;
         const spawn = () => {
           if (!this.musicNotes) return;
-          const t = this.add.text(CENTER_X + Phaser.Math.Between(-260, 260), 330 - Phaser.Math.Between(0, 160),
+          const t = this.add.text(CENTER_X + Phaser.Math.Between(-260, 260), 330 + OY - Phaser.Math.Between(0, 160),
             Phaser.Utils.Array.GetRandom(['🎵', '🎶', '🎼']), { fontFamily: FONT, fontSize: Phaser.Math.Between(16, 26) + 'px' })
             .setOrigin(0.5).setDepth(955).setAlpha(0.85);
           this.tweens.add({ targets: t, y: t.y - 70, alpha: 0, duration: 2200, onComplete: () => t.destroy() });
@@ -549,7 +572,7 @@
     }
 
     doHug(done) {
-      const B = this.bride.root, G = this.groom.root, y0 = 340;
+      const B = this.bride.root, G = this.groom.root, y0 = 340 + OY;
       // Tiến lại gần nhau
       this.tweens.add({ targets: B, x: CENTER_X - 24, duration: 600, ease: 'Sine.inOut' });
       this.tweens.add({ targets: G, x: CENTER_X + 24, duration: 600, ease: 'Sine.inOut' });
@@ -574,7 +597,7 @@
     }
 
     doDance(done) {
-      const B = this.bride.root, G = this.groom.root, cx = CENTER_X, y0 = 340, R = 46;
+      const B = this.bride.root, G = this.groom.root, cx = CENTER_X, y0 = 340 + OY, R = 46;
       // Khiêu vũ theo nhạc khoảng danceMusicSeconds giây (mặc định 60)
       const seconds = Math.max(10, cfg.danceMusicSeconds ?? 60);
       if (MUSIC_ON()) {
@@ -616,7 +639,7 @@
           this.tweens.add({ targets: B, x: cx - 60, y: y0, duration: 600 });
           this.tweens.add({
             targets: G, x: cx + 60, y: y0, duration: 600,
-            onComplete: () => { B.setDepth(340); G.setDepth(340); this.celebrate(); done(); }
+            onComplete: () => { B.setDepth(y0); G.setDepth(y0); this.celebrate(); done(); }
           });
         }
       }));
@@ -745,7 +768,7 @@
       if (acts.includes('dance')) this.pendingMeter = gift.meter; else if (gift.meter) this.onMeter(gift.meter);
       acts.forEach(a => this.queueCouple(a));
       this.banner(`${giftEmoji(gift.giftName)} ${gift.nickname} tặng thêm ${gift.count} ${gift.giftName}`, isBig(gift));
-      this.hearts.explode(20, CENTER_X, 230);
+      this.hearts.explode(20, CENTER_X, 230 + OY);
     }
 
     /**
@@ -910,7 +933,7 @@
       guest.heldGift?.destroy();
       guest.heldGift = null;
       // Quà bay về phía cô dâu (slot trái), chú rể (slot phải) hoặc chính giữa
-      const tx = CENTER_X + (slot.x - CENTER_X) * 0.45, ty = 225;
+      const tx = CENTER_X + (slot.x - CENTER_X) * 0.45, ty = 225 + OY;
 
       // Quà bay từ tay khách lên giữa cô dâu chú rể
       const fly = (gift.npc
@@ -958,7 +981,7 @@
     coupleHappy(big) {
       if (this.coupleBusy) return;                     // đang ôm hôn / khiêu vũ thì không nhảy lên
       [this.bride, this.groom].forEach((p, i) => this.tweens.add({
-        targets: p.root, y: 340 - (big ? 28 : 14), duration: 180, yoyo: true, repeat: big ? 2 : 0, delay: i * 90, ease: 'Quad.out'
+        targets: p.root, y: 340 + OY - (big ? 28 : 14), duration: 180, yoyo: true, repeat: big ? 2 : 0, delay: i * 90, ease: 'Quad.out'
       }));
     }
 
@@ -966,7 +989,7 @@
       this.cameras.main.flash(250, 255, 240, 250);
       for (let i = 0; i < 6; i++) {
         this.after(i * 260, () =>
-          this.fireworks.explode(60, Phaser.Math.Between(200, W - 200), Phaser.Math.Between(70, 230)));
+          this.fireworks.explode(60, Phaser.Math.Between(PORTRAIT ? 120 : 200, W - (PORTRAIT ? 120 : 200)), Phaser.Math.Between(70, 230) + OY));
       }
     }
 
@@ -974,7 +997,7 @@
       this.bannerObj?.destroy();
       const b = makeLabel(this, text, {
         fontSize: big ? '26px' : '22px', bg: big ? 0x7b2cbf : 0xc9184a, bgAlpha: 0.92, stroke: 0xffd166
-      }).setPosition(CENTER_X, 142).setDepth(990).setScale(0);
+      }).setPosition(CENTER_X, PORTRAIT ? OY + 150 : 142).setDepth(990).setScale(0);
       this.bannerObj = b;
       this.tweens.add({ targets: b, scale: 1, duration: 300, ease: 'Back.out' });
       this.tweens.add({ targets: b, alpha: 0, delay: 2800, duration: 400, onComplete: () => b.destroy() });
@@ -1046,8 +1069,8 @@
         .setDepth(980).setPosition(W + 200, 0);
       this.toasts.push(t);
       if (this.toasts.length > 4) this.toasts.shift().destroy();
-      this.toasts.forEach((x, i) => x.y = 220 + i * 34);
-      this.tweens.add({ targets: t, x: W - 160, duration: 350, ease: 'Cubic.out' });
+      this.toasts.forEach((x, i) => x.y = (PORTRAIT ? 425 : 220) + i * 34);
+      this.tweens.add({ targets: t, x: W - (PORTRAIT ? 135 : 160), duration: 350, ease: 'Cubic.out' });
       this.after(4000, () => this.tweens.add({
         targets: t, alpha: 0, duration: 400,
         onComplete: () => { this.toasts = this.toasts.filter(x => x !== t); t.destroy(); }

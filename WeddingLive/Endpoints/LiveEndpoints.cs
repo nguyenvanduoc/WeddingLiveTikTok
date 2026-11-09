@@ -22,6 +22,7 @@ public static class LiveEndpoints
             o.CurrentValue.BrideName,
             o.CurrentValue.GroomName,
             o.CurrentValue.Title,
+            Layout = string.Equals(o.CurrentValue.Layout, "landscape", StringComparison.OrdinalIgnoreCase) ? "landscape" : "portrait",
             GuestCount = Math.Clamp(o.CurrentValue.GuestCount, 0, 24),
             Tables = Math.Clamp(o.CurrentValue.Tables, 0, 5),
             GuestsPerTable = Math.Clamp(o.CurrentValue.GuestsPerTable, 4, 12),

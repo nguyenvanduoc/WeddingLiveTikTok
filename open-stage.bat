@@ -4,8 +4,15 @@ title Mo san khau (tu phat am thanh)
 rem Mo san khau trong cua so Chrome/Edge rieng, CHO PHEP tu phat am thanh (khong can bam nut 🔊).
 rem Dung cho TikTok LIVE Studio: them nguon "Window capture" chon cua so nay + bat thu am thanh he thong.
 
+rem Mac dinh: man hinh DOC 9:16 (hop dien thoai). Muon ban NGANG 16:9: chay "open-stage.bat ngang"
 set "URL=http://localhost:5000/"
-set "PROFILE=%TEMP%\wedding-stage-browser"
+set "SIZE=600,1040"
+set "PROFILE=%TEMP%\wedding-stage-doc"
+if /i "%~1"=="ngang" (
+  set "URL=http://localhost:5000/?layout=landscape"
+  set "SIZE=1296,759"
+  set "PROFILE=%TEMP%\wedding-stage-browser"
+)
 
 set "B=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%B%" goto run
@@ -25,4 +32,4 @@ exit /b 1
 :run
 echo Dang mo san khau bang: %B%
 rem Cac co --disable-...: khong cho trinh duyet giam toc do ve khi cua so bi che (LIVE Studio dang o tren) => hinh khong bi dung.
-start "" "%B%" --app=%URL% --autoplay-policy=no-user-gesture-required --user-data-dir="%PROFILE%" --window-size=1296,759 --no-first-run --no-default-browser-check --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows
+start "" "%B%" --app=%URL% --autoplay-policy=no-user-gesture-required --user-data-dir="%PROFILE%" --window-size=%SIZE% --no-first-run --no-default-browser-check --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows
